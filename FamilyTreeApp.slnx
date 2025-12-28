@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="familytreeapp.client/familytreeapp.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="FamilyTreeApp.Server/FamilyTreeApp.Server.csproj" />
+</Solution>
