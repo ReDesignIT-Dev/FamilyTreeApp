@@ -1,11 +1,7 @@
+using FamilyTreeApp.Server.Interfaces;
 using Ganss.Xss;
 
 namespace FamilyTreeApp.Server.Services;
-
-public interface IHtmlSanitizerService
-{
-    string Sanitize(string html);
-}
 
 public class HtmlSanitizerService : IHtmlSanitizerService
 {
