@@ -6,5 +6,6 @@
     <Build />
     <Deploy />
   </Project>
+  <Project Path="FamilyTreeApp.Server.Tests/FamilyTreeApp.Server.Tests.csproj" />
   <Project Path="FamilyTreeApp.Server/FamilyTreeApp.Server.csproj" />
 </Solution>
