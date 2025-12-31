@@ -1,10 +1,7 @@
-using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
-using FamilyTreeApp.Server.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FamilyTreeApp.Server.Controllers;
@@ -14,17 +11,14 @@ namespace FamilyTreeApp.Server.Controllers;
 [Authorize(Policy = "ActiveUserOnly")]
 public class FamilyMembersController : ControllerBase
 {
-    private readonly FamilyTreeContext _context;
-    private readonly IHtmlSanitizerService _htmlSanitizer;
+    private readonly IFamilyMemberService _familyMemberService;
     private readonly ILogger<FamilyMembersController> _logger;
 
     public FamilyMembersController(
-        FamilyTreeContext context,
-        IHtmlSanitizerService htmlSanitizer,
+        IFamilyMemberService familyMemberService,
         ILogger<FamilyMembersController> logger)
     {
-        _context = context;
-        _htmlSanitizer = htmlSanitizer;
+        _familyMemberService = familyMemberService;
         _logger = logger;
     }
 
@@ -36,62 +30,19 @@ public class FamilyMembersController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees
-            .Include(t => t.Members)
-            .FirstOrDefaultAsync(t => t.Id == treeId);
+        var (success, person, error) = await _familyMemberService.AddPersonToTreeAsync(treeId, userId.Value, dto);
 
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
-
-        // Check if user can edit this tree
-        if (!await CanEditTree(tree, userId.Value))
-            return Forbid();
-
-        // Create new person
-        var person = new Person
-        {
-            FirstName = dto.FirstName.Trim(),
-            MiddleName = dto.MiddleName?.Trim(),
-            LastName = dto.LastName.Trim(),
-            MaidenName = dto.MaidenName?.Trim(),
-            BirthDate = dto.BirthDate,
-            BirthPlace = dto.BirthPlace?.Trim(),
-            DeathDate = dto.DeathDate,
-            DeathPlace = dto.DeathPlace?.Trim(),
-            Gender = dto.Gender?.Trim(),
-            Biography = !string.IsNullOrWhiteSpace(dto.Biography) 
-                ? _htmlSanitizer.Sanitize(dto.Biography) 
-                : null,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        // Validate dates
-        if (person.DeathDate.HasValue && person.BirthDate.HasValue)
-        {
-            if (person.DeathDate < person.BirthDate)
-                return BadRequest(new { message = "Death date cannot be before birth date" });
-        }
-
-        _context.People.Add(person);
-        await _context.SaveChangesAsync();
-
-        // Add person to tree
-        var treeMember = new TreeMember
-        {
-            FamilyTreeId = treeId,
-            PersonId = person.Id
-        };
-
-        _context.TreeMembers.Add(treeMember);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "User {UserId} added person {PersonId} to tree {TreeId}",
-            userId, person.Id, treeId);
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "You don't have permission to edit this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
         return CreatedAtAction(
             nameof(GetPersonById),
-            new { treeId, id = person.Id },
+            new { treeId, id = person!.Id },
             MapToPersonDto(person));
     }
 
@@ -103,23 +54,15 @@ public class FamilyMembersController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees
-            .Include(t => t.Members)
-                .ThenInclude(tm => tm.Person)
-            .FirstOrDefaultAsync(t => t.Id == treeId);
+        var (success, members, error) = await _familyMemberService.GetTreeMembersAsync(treeId, userId.Value);
 
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
-
-        // Check if user has access to this tree
-        if (!await HasAccessToTree(tree, userId.Value))
-            return Forbid();
-
-        var members = tree.Members
-            .Select(tm => MapToPersonSummaryDto(tm.Person))
-            .OrderBy(p => p.LastName)
-            .ThenBy(p => p.FirstName)
-            .ToList();
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "You don't have access to this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
         return Ok(members);
     }
@@ -132,32 +75,19 @@ public class FamilyMembersController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees.FindAsync(treeId);
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
+        var (success, person, error) = await _familyMemberService.GetPersonByIdAsync(treeId, id, userId.Value);
 
-        if (!await HasAccessToTree(tree, userId.Value))
-            return Forbid();
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "Person not found in this tree" => NotFound(new { message = error }),
+                "Person not found" => NotFound(new { message = error }),
+                "You don't have access to this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
-        // Check if person is in this tree
-        var treeMember = await _context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == id);
-
-        if (treeMember == null)
-            return NotFound(new { message = "Person not found in this tree" });
-
-        var person = await _context.People
-            .Include(p => p.ParentRelationships)
-                .ThenInclude(r => r.Child)
-            .Include(p => p.ChildRelationships)
-                .ThenInclude(r => r.Parent)
-            .Include(p => p.MediaFiles)
-            .FirstOrDefaultAsync(p => p.Id == id);
-
-        if (person == null)
-            return NotFound(new { message = "Person not found" });
-
-        return Ok(MapToPersonDto(person));
+        return Ok(person);
     }
 
     // PUT /api/trees/{treeId}/members/{id} - Update person
@@ -168,52 +98,19 @@ public class FamilyMembersController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees.FindAsync(treeId);
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
+        var (success, person, error) = await _familyMemberService.UpdatePersonAsync(treeId, id, userId.Value, dto);
 
-        if (!await CanEditTree(tree, userId.Value))
-            return Forbid();
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "Person not found in this tree" => NotFound(new { message = error }),
+                "Person not found" => NotFound(new { message = error }),
+                "You don't have permission to edit this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
-        // Check if person is in this tree
-        var treeMember = await _context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == id);
-
-        if (treeMember == null)
-            return NotFound(new { message = "Person not found in this tree" });
-
-        var person = await _context.People.FindAsync(id);
-        if (person == null)
-            return NotFound(new { message = "Person not found" });
-
-        // Update person details
-        person.FirstName = dto.FirstName.Trim();
-        person.MiddleName = dto.MiddleName?.Trim();
-        person.LastName = dto.LastName.Trim();
-        person.MaidenName = dto.MaidenName?.Trim();
-        person.BirthDate = dto.BirthDate;
-        person.BirthPlace = dto.BirthPlace?.Trim();
-        person.DeathDate = dto.DeathDate;
-        person.DeathPlace = dto.DeathPlace?.Trim();
-        person.Gender = dto.Gender?.Trim();
-        person.Biography = !string.IsNullOrWhiteSpace(dto.Biography)
-            ? _htmlSanitizer.Sanitize(dto.Biography)
-            : null;
-
-        // Validate dates
-        if (person.DeathDate.HasValue && person.BirthDate.HasValue)
-        {
-            if (person.DeathDate < person.BirthDate)
-                return BadRequest(new { message = "Death date cannot be before birth date" });
-        }
-
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "User {UserId} updated person {PersonId} in tree {TreeId}",
-            userId, person.Id, treeId);
-
-        return Ok(MapToPersonDto(person));
+        return Ok(person);
     }
 
     // DELETE /api/trees/{treeId}/members/{id} - Remove from tree
@@ -224,38 +121,16 @@ public class FamilyMembersController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees.FindAsync(treeId);
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
+        var (success, error) = await _familyMemberService.RemovePersonFromTreeAsync(treeId, id, userId.Value);
 
-        if (!await CanEditTree(tree, userId.Value))
-            return Forbid();
-
-        var treeMember = await _context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == id);
-
-        if (treeMember == null)
-            return NotFound(new { message = "Person not found in this tree" });
-
-        // Check if person has relationships in this tree
-        var hasRelationships = await _context.Relationships
-            .AnyAsync(r => r.ParentId == id || r.ChildId == id);
-
-        if (hasRelationships)
-        {
-            return BadRequest(new 
-            { 
-                message = "Cannot remove person with existing relationships. Remove relationships first." 
-            });
-        }
-
-        // Remove from tree (not deleting the person, just the association)
-        _context.TreeMembers.Remove(treeMember);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "User {UserId} removed person {PersonId} from tree {TreeId}",
-            userId, id, treeId);
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "Person not found in this tree" => NotFound(new { message = error }),
+                "You don't have permission to edit this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
         return NoContent();
     }
@@ -267,37 +142,7 @@ public class FamilyMembersController : ControllerBase
         return int.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 
-    private async Task<bool> HasAccessToTree(FamilyTree tree, int userId)
-    {
-        // Owner has access
-        if (tree.OwnerId == userId)
-            return true;
-
-        // Public trees are accessible
-        if (tree.IsPublic)
-            return true;
-
-        // Check if user is a collaborator
-        var isCollaborator = await _context.TreeCollaborators
-            .AnyAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return isCollaborator;
-    }
-
-    private async Task<bool> CanEditTree(FamilyTree tree, int userId)
-    {
-        // Owner can edit
-        if (tree.OwnerId == userId)
-            return true;
-
-        // Check if collaborator has Edit or Admin permission
-        var collaborator = await _context.TreeCollaborators
-            .FirstOrDefaultAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return collaborator?.Permission is "Edit" or "Admin";
-    }
-
-    private PersonDto MapToPersonDto(Person person)
+    private PersonDto MapToPersonDto(Models.Person person)
     {
         return new PersonDto
         {
@@ -314,19 +159,6 @@ public class FamilyMembersController : ControllerBase
             Biography = person.Biography,
             ProfilePhotoUrl = person.ProfilePhotoUrl,
             CreatedAt = person.CreatedAt
-        };
-    }
-
-    private PersonSummaryDto MapToPersonSummaryDto(Person person)
-    {
-        return new PersonSummaryDto
-        {
-            Id = person.Id,
-            FirstName = person.FirstName,
-            LastName = person.LastName,
-            BirthDate = person.BirthDate,
-            DeathDate = person.DeathDate,
-            ProfilePhotoUrl = person.ProfilePhotoUrl
         };
     }
 }
