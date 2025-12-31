@@ -1,11 +1,8 @@
-using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.FamilyTree;
 using FamilyTreeApp.Server.Dtos.TreeCollaborator;
-using FamilyTreeApp.Server.Models;
+using FamilyTreeApp.Server.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FamilyTreeApp.Server.Controllers;
@@ -15,17 +12,14 @@ namespace FamilyTreeApp.Server.Controllers;
 [Authorize(Policy = "ActiveUserOnly")]
 public class FamilyTreesController : ControllerBase
 {
-    private readonly FamilyTreeContext _context;
-    private readonly UserManager<User> _userManager;
+    private readonly IFamilyTreeService _familyTreeService;
     private readonly ILogger<FamilyTreesController> _logger;
 
     public FamilyTreesController(
-        FamilyTreeContext context,
-        UserManager<User> userManager,
+        IFamilyTreeService familyTreeService,
         ILogger<FamilyTreesController> logger)
     {
-        _context = context;
-        _userManager = userManager;
+        _familyTreeService = familyTreeService;
         _logger = logger;
     }
 
@@ -37,24 +31,12 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = new FamilyTree
-        {
-            Name = dto.Name,
-            Description = dto.Description,
-            OwnerId = userId.Value,
-            IsPublic = dto.IsPublic,
-            CreatedAt = DateTime.UtcNow
-        };
+        var (success, tree, error) = await _familyTreeService.CreateTreeAsync(userId.Value, dto);
 
-        _context.FamilyTrees.Add(tree);
-        await _context.SaveChangesAsync();
+        if (!success)
+            return BadRequest(new { message = error });
 
-        _logger.LogInformation("User {UserId} created family tree {TreeId}", userId, tree.Id);
-
-        return CreatedAtAction(
-            nameof(GetTreeById),
-            new { id = tree.Id },
-            await MapToFamilyTreeDto(tree));
+        return CreatedAtAction(nameof(GetTreeById), new { id = tree!.Id }, tree);
     }
 
     // GET /api/familytrees - Get user's trees
@@ -65,27 +47,12 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var ownedTrees = await _context.FamilyTrees
-            .Where(t => t.OwnerId == userId.Value)
-            .Include(t => t.Members)
-            .OrderByDescending(t => t.CreatedAt)
-            .ToListAsync();
+        var (success, trees, error) = await _familyTreeService.GetUserTreesAsync(userId.Value);
 
-        var sharedTrees = await _context.TreeCollaborators
-            .Where(tc => tc.UserId == userId.Value)
-            .Include(tc => tc.FamilyTree)
-                .ThenInclude(t => t.Members)
-            .Select(tc => tc.FamilyTree)
-            .OrderByDescending(t => t.CreatedAt)
-            .ToListAsync();
+        if (!success)
+            return BadRequest(new { message = error });
 
-        var allTrees = ownedTrees
-            .Concat(sharedTrees)
-            .DistinctBy(t => t.Id)
-            .Select(MapToTreeSummaryDto)
-            .ToList();
-
-        return Ok(allTrees);
+        return Ok(trees);
     }
 
     // GET /api/familytrees/{id} - Get tree details
@@ -96,21 +63,17 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees
-            .Include(t => t.Owner)
-            .Include(t => t.Members)
-            .Include(t => t.Collaborators)
-                .ThenInclude(c => c.User)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        var (success, tree, error) = await _familyTreeService.GetTreeByIdAsync(id, userId.Value);
 
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "You don't have access to this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
-        // Check access permissions
-        if (!await HasAccessToTree(tree, userId.Value))
-            return Forbid();
-
-        return Ok(await MapToFamilyTreeDto(tree));
+        return Ok(tree);
     }
 
     // PUT /api/familytrees/{id} - Update tree
@@ -121,28 +84,17 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees
-            .Include(t => t.Owner)
-            .Include(t => t.Members)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        var (success, tree, error) = await _familyTreeService.UpdateTreeAsync(id, userId.Value, dto);
 
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "You don't have permission to edit this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
-        // Only owner or collaborators with Admin permission can update
-        if (!await CanEditTree(tree, userId.Value))
-            return Forbid();
-
-        tree.Name = dto.Name;
-        tree.Description = dto.Description;
-        tree.IsPublic = dto.IsPublic;
-        tree.UpdatedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("User {UserId} updated family tree {TreeId}", userId, tree.Id);
-
-        return Ok(await MapToFamilyTreeDto(tree));
+        return Ok(tree);
     }
 
     // DELETE /api/familytrees/{id} - Delete tree
@@ -153,22 +105,15 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees
-            .Include(t => t.Members)
-            .Include(t => t.Collaborators)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        var (success, error) = await _familyTreeService.DeleteTreeAsync(id, userId.Value);
 
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
-
-        // Only owner can delete
-        if (tree.OwnerId != userId.Value)
-            return Forbid();
-
-        _context.FamilyTrees.Remove(tree);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("User {UserId} deleted family tree {TreeId}", userId, tree.Id);
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "Only the owner can delete this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
         return NoContent();
     }
@@ -181,57 +126,18 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees
-            .Include(t => t.Collaborators)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        var (success, collaborator, error) = await _familyTreeService.ShareTreeAsync(id, userId.Value, dto);
 
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "User not found" => NotFound(new { message = error }),
+                "You don't have permission to share this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
-        // Only owner or Admin collaborators can share
-        if (!await CanManageCollaborators(tree, userId.Value))
-            return Forbid();
-
-        // Find user by email
-        var targetUser = await _userManager.FindByEmailAsync(dto.UserEmail);
-        if (targetUser == null)
-            return NotFound(new { message = "User not found" });
-
-        // Check if already a collaborator
-        var existingCollaborator = await _context.TreeCollaborators
-            .FirstOrDefaultAsync(tc => tc.FamilyTreeId == id && tc.UserId == targetUser.Id);
-
-        if (existingCollaborator != null)
-            return BadRequest(new { message = "User is already a collaborator" });
-
-        // Can't share with owner
-        if (tree.OwnerId == targetUser.Id)
-            return BadRequest(new { message = "Cannot share tree with its owner" });
-
-        var collaborator = new TreeCollaborator
-        {
-            FamilyTreeId = id,
-            UserId = targetUser.Id,
-            Permission = dto.Permission,
-            InvitedAt = DateTime.UtcNow
-        };
-
-        _context.TreeCollaborators.Add(collaborator);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "User {UserId} shared tree {TreeId} with user {TargetUserId} with {Permission} permission",
-            userId, id, targetUser.Id, dto.Permission);
-
-        return Ok(new CollaboratorDto
-        {
-            Id = collaborator.Id,
-            UserId = targetUser.Id,
-            Username = targetUser.UserName!,
-            Email = targetUser.Email!,
-            Permission = collaborator.Permission,
-            InvitedAt = collaborator.InvitedAt
-        });
+        return Ok(collaborator);
     }
 
     // GET /api/familytrees/{id}/collaborators - Get tree collaborators
@@ -242,26 +148,15 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees
-            .Include(t => t.Collaborators)
-                .ThenInclude(c => c.User)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        var (success, collaborators, error) = await _familyTreeService.GetCollaboratorsAsync(id, userId.Value);
 
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
-
-        if (!await HasAccessToTree(tree, userId.Value))
-            return Forbid();
-
-        var collaborators = tree.Collaborators.Select(c => new CollaboratorDto
-        {
-            Id = c.Id,
-            UserId = c.UserId,
-            Username = c.User.UserName!,
-            Email = c.User.Email!,
-            Permission = c.Permission,
-            InvitedAt = c.InvitedAt
-        }).ToList();
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "You don't have access to this tree" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
         return Ok(collaborators);
     }
@@ -274,105 +169,24 @@ public class FamilyTreesController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var tree = await _context.FamilyTrees.FindAsync(id);
-        if (tree == null)
-            return NotFound(new { message = "Family tree not found" });
+        var (success, error) = await _familyTreeService.RemoveCollaboratorAsync(id, collaboratorId, userId.Value);
 
-        if (!await CanManageCollaborators(tree, userId.Value))
-            return Forbid();
-
-        var collaborator = await _context.TreeCollaborators.FindAsync(collaboratorId);
-        if (collaborator == null || collaborator.FamilyTreeId != id)
-            return NotFound(new { message = "Collaborator not found" });
-
-        _context.TreeCollaborators.Remove(collaborator);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "User {UserId} removed collaborator {CollaboratorId} from tree {TreeId}",
-            userId, collaboratorId, id);
+        if (!success)
+            return error switch
+            {
+                "Family tree not found" => NotFound(new { message = error }),
+                "Collaborator not found" => NotFound(new { message = error }),
+                "You don't have permission to manage collaborators" => Forbid(),
+                _ => BadRequest(new { message = error })
+            };
 
         return NoContent();
     }
 
-    // Helper methods
+    // Helper method
     private int? GetUserId()
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return int.TryParse(userIdClaim, out var userId) ? userId : null;
-    }
-
-    private async Task<bool> HasAccessToTree(FamilyTree tree, int userId)
-    {
-        // Owner has access
-        if (tree.OwnerId == userId)
-            return true;
-
-        // Public trees are accessible
-        if (tree.IsPublic)
-            return true;
-
-        // Check if user is a collaborator
-        var isCollaborator = await _context.TreeCollaborators
-            .AnyAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return isCollaborator;
-    }
-
-    private async Task<bool> CanEditTree(FamilyTree tree, int userId)
-    {
-        // Owner can edit
-        if (tree.OwnerId == userId)
-            return true;
-
-        // Check if collaborator has Edit or Admin permission
-        var collaborator = await _context.TreeCollaborators
-            .FirstOrDefaultAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return collaborator?.Permission is "Edit" or "Admin";
-    }
-
-    private async Task<bool> CanManageCollaborators(FamilyTree tree, int userId)
-    {
-        // Owner can manage
-        if (tree.OwnerId == userId)
-            return true;
-
-        // Check if collaborator has Admin permission
-        var collaborator = await _context.TreeCollaborators
-            .FirstOrDefaultAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return collaborator?.Permission == "Admin";
-    }
-
-    private async Task<FamilyTreeDto> MapToFamilyTreeDto(FamilyTree tree)
-    {
-        var owner = tree.Owner ?? await _context.Users.FindAsync(tree.OwnerId);
-
-        return new FamilyTreeDto
-        {
-            Id = tree.Id,
-            Name = tree.Name,
-            Description = tree.Description,
-            OwnerId = tree.OwnerId,
-            OwnerUsername = owner?.UserName ?? "Unknown",
-            IsPublic = tree.IsPublic,
-            CreatedAt = tree.CreatedAt,
-            UpdatedAt = tree.UpdatedAt,
-            MemberCount = tree.Members?.Count ?? 0
-        };
-    }
-
-    private TreeSummaryDto MapToTreeSummaryDto(FamilyTree tree)
-    {
-        return new TreeSummaryDto
-        {
-            Id = tree.Id,
-            Name = tree.Name,
-            Description = tree.Description,
-            IsPublic = tree.IsPublic,
-            MemberCount = tree.Members?.Count ?? 0,
-            CreatedAt = tree.CreatedAt
-        };
     }
 }
