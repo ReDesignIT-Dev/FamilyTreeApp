@@ -10,34 +10,30 @@ import {
   CardContent,
   CardActions,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import { Add, AccountTree } from '@mui/icons-material';
-
-interface FamilyTree {
-  id: number;
-  name: string;
-  description?: string;
-  createdDate: string;
-}
+import { FamilyTreeService } from '../services/api/familyTreeService';
+import type { FamilyTree } from '../types/familyTree.types';
 
 export default function FamilyTreeListPage() {
   const navigate = useNavigate();
   const [trees, setTrees] = useState<FamilyTree[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchFamilyTrees();
+    loadFamilyTrees();
   }, []);
 
-  const fetchFamilyTrees = async () => {
+  const loadFamilyTrees = async () => {
     try {
-      const response = await fetch('/api/familytrees');
-      if (response.ok) {
-        const data = await response.json();
-        setTrees(data);
-      }
-    } catch (error) {
-      console.error('Error fetching family trees:', error);
+      const data = await FamilyTreeService.getAll();
+      setTrees(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load family trees');
+      console.error('Error fetching family trees:', err);
     } finally {
       setLoading(false);
     }
@@ -56,6 +52,16 @@ export default function FamilyTreeListPage() {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
         <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
       </Container>
     );
   }
@@ -95,7 +101,7 @@ export default function FamilyTreeListPage() {
                   <Typography variant="h6" gutterBottom>
                     {tree.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {tree.description || 'No description'}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">

@@ -14,14 +14,8 @@ import {
   Link,
 } from '@mui/material';
 import { ArrowBack, Edit, Delete, Add } from '@mui/icons-material';
-
-interface FamilyTree {
-  id: number;
-  name: string;
-  description?: string;
-  createdDate: string;
-  userId: string;
-}
+import { FamilyTreeService } from '../services/api/familyTreeService';
+import type { FamilyTree } from '../types/familyTree.types';
 
 export default function FamilyTreeDetailPage() {
   const { treeId } = useParams<{ treeId: string }>();
@@ -32,22 +26,18 @@ export default function FamilyTreeDetailPage() {
 
   useEffect(() => {
     if (treeId) {
-      fetchFamilyTree(treeId);
+      loadFamilyTree(treeId);
     }
   }, [treeId]);
 
-  const fetchFamilyTree = async (id: string) => {
+  const loadFamilyTree = async (id: string) => {
     try {
-      const response = await fetch(`/api/familytrees/${id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTree(data);
-      } else {
-        setError('Family tree not found');
-      }
-    } catch (error) {
-      console.error('Error fetching family tree:', error);
-      setError('Failed to load family tree');
+      const data = await FamilyTreeService.getById(id);
+      setTree(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load family tree');
+      console.error('Error fetching family tree:', err);
     } finally {
       setLoading(false);
     }
@@ -68,14 +58,11 @@ export default function FamilyTreeDetailPage() {
     }
 
     try {
-      const response = await fetch(`/api/familytrees/${treeId}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        navigate('/trees');
-      }
-    } catch (error) {
-      console.error('Error deleting family tree:', error);
+      await FamilyTreeService.delete(treeId);
+      navigate('/trees');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete family tree');
+      console.error('Error deleting family tree:', err);
     }
   };
 
@@ -144,7 +131,7 @@ export default function FamilyTreeDetailPage() {
       {/* Tree Info Card */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="body1" color="text.secondary" paragraph>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
             {tree.description || 'No description provided'}
           </Typography>
           <Typography variant="caption" color="text.secondary">
