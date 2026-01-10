@@ -1,11 +1,11 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import RootLayout from '../components/layout/RootLayout';
-import HomePage from '../pages/HomePage';
-import FamilyTreeListPage from '../pages/FamilyTreeListPage';
-import FamilyTreeDetailPage from '../pages/FamilyTreeDetailPage';
-import MemberDetailsPage from '../pages/MemberDetailsPage';
-import AuthPage from '../pages/AuthPage';
-import NotFoundPage from '../pages/NotFoundPage';
+import RootLayout from '@/components/layout/RootLayout';
+import HomePage from '@/pages/HomePage';
+import FamilyTreeListPage from '@/pages/FamilyTreeListPage';
+import FamilyTreeDetailPage from '@/pages/FamilyTreeDetailPage';
+import MemberDetailsPage from '@/pages/MemberDetailsPage';
+import AuthPage from '@/pages/AuthPage';
+import NotFoundPage from '@/pages/NotFoundPage';
 
 const router = createBrowserRouter([
   {

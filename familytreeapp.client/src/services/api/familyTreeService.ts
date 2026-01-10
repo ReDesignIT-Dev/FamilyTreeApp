@@ -1,5 +1,5 @@
-import { ApiClient } from './apiClient';
-import type { FamilyTree, CreateFamilyTreeDto, UpdateFamilyTreeDto } from '../../types/familyTree.types';
+import { ApiClient } from '@/services/api/apiClient';
+import type { FamilyTree, CreateFamilyTreeDto, UpdateFamilyTreeDto } from '@/types/familyTree.types';
 
 export class FamilyTreeService {
   private static readonly BASE_PATH = '/familytrees';

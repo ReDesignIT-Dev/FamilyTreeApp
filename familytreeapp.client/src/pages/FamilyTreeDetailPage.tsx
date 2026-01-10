@@ -14,8 +14,8 @@ import {
   Link,
 } from '@mui/material';
 import { ArrowBack, Edit, Delete, Add } from '@mui/icons-material';
-import { FamilyTreeService } from '../services/api/familyTreeService';
-import type { FamilyTree } from '../types/familyTree.types';
+import { FamilyTreeService } from '@/services/api/familyTreeService';
+import type { FamilyTree } from '@/types/familyTree.types';
 
 export default function FamilyTreeDetailPage() {
   const { treeId } = useParams<{ treeId: string }>();

@@ -13,8 +13,8 @@ import {
   Alert,
 } from '@mui/material';
 import { Add, AccountTree } from '@mui/icons-material';
-import { FamilyTreeService } from '../services/api/familyTreeService';
-import type { FamilyTree } from '../types/familyTree.types';
+import { FamilyTreeService } from '@/services/api/familyTreeService';
+import type { FamilyTree } from '@/types/familyTree.types';
 
 export default function FamilyTreeListPage() {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ export default function FamilyTreeListPage() {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Alert severity="error" onClose={() => setError(null)}>
-          {error}
+                Error Loading Family Trees
         </Alert>
       </Container>
     );
