@@ -1,8 +1,7 @@
-using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
-using FamilyTreeApp.Server.Models;
 using FamilyTreeApp.Server.Services;
+using FamilyTreeApp.Server.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -16,37 +15,18 @@ public class FamilyMemberServiceTests
 
     public FamilyMemberServiceTests()
     {
-        _mockHtmlSanitizer = new Mock<IHtmlSanitizerService>();
-        _mockLogger = new Mock<ILogger<FamilyMemberService>>();
-
-        // Default sanitizer behavior - returns input as-is
-        _mockHtmlSanitizer
-            .Setup(x => x.Sanitize(It.IsAny<string>()))
-            .Returns((string input) => input);
-    }
-
-    private FamilyTreeContext GetInMemoryDbContext()
-    {
-        var options = new DbContextOptionsBuilder<FamilyTreeContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        return new FamilyTreeContext(options);
+        _mockHtmlSanitizer = MockServiceFactory.CreateHtmlSanitizer();
+        _mockLogger = MockServiceFactory.CreateLogger<FamilyMemberService>();
     }
 
     [Fact]
     public async Task AddPersonToTreeAsync_Success_ReturnsPersonWithCorrectData()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        
-        context.Users.Add(owner);
-        context.FamilyTrees.Add(tree);
-        await context.SaveChangesAsync();
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
 
         var dto = new CreatePersonDto
         {
@@ -71,11 +51,11 @@ public class FamilyMemberServiceTests
         Assert.Equal(new DateOnly(1990, 1, 1), person.BirthDate);
         Assert.Equal("New York", person.BirthPlace);
         Assert.Equal("Male", person.Gender);
-        
+
         // Verify person was added to database
         var savedPerson = await context.People.FindAsync(person.Id);
         Assert.NotNull(savedPerson);
-        
+
         // Verify person was added to tree
         var treeMember = await context.TreeMembers
             .FirstOrDefaultAsync(tm => tm.FamilyTreeId == 1 && tm.PersonId == person.Id);
@@ -86,7 +66,7 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_TreeNotFound_ReturnsError()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
         var dto = new CreatePersonDto
@@ -108,13 +88,13 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_UserNotOwner_ReturnsError()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var otherUser = new User { Id = 2, UserName = "other", Email = "other@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        
+        var owner = TestDataSeeder.CreateTestUser(1, "owner", "owner@test.com");
+        var otherUser = TestDataSeeder.CreateTestUser(2, "other", "other@test.com");
+        var tree = TestDataSeeder.CreateTestFamilyTree(1, "Test Tree", 1, owner);
+
         context.Users.AddRange(owner, otherUser);
         context.FamilyTrees.Add(tree);
         await context.SaveChangesAsync();
@@ -138,23 +118,11 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_CollaboratorWithEditPermission_Success()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var collaborator = new User { Id = 2, UserName = "collab", Email = "collab@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        var treeCollaborator = new TreeCollaborator
-        {
-            FamilyTreeId = 1,
-            UserId = 2,
-            Permission = "Edit"
-        };
-        
-        context.Users.AddRange(owner, collaborator);
-        context.FamilyTrees.Add(tree);
-        context.TreeCollaborators.Add(treeCollaborator);
-        await context.SaveChangesAsync();
+        var (owner, collaborator, tree, collaboration) =
+            await TestDataSeeder.SeedCollaboratorScenarioAsync(context, "Edit");
 
         var dto = new CreatePersonDto
         {
@@ -177,23 +145,11 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_CollaboratorWithViewPermission_ReturnsError()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var collaborator = new User { Id = 2, UserName = "collab", Email = "collab@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        var treeCollaborator = new TreeCollaborator
-        {
-            FamilyTreeId = 1,
-            UserId = 2,
-            Permission = "View"
-        };
-        
-        context.Users.AddRange(owner, collaborator);
-        context.FamilyTrees.Add(tree);
-        context.TreeCollaborators.Add(treeCollaborator);
-        await context.SaveChangesAsync();
+        var (owner, collaborator, tree, collaboration) =
+            await TestDataSeeder.SeedCollaboratorScenarioAsync(context, "View");
 
         var dto = new CreatePersonDto
         {
@@ -214,15 +170,10 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_DeathDateBeforeBirthDate_ReturnsError()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        
-        context.Users.Add(owner);
-        context.FamilyTrees.Add(tree);
-        await context.SaveChangesAsync();
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
 
         var dto = new CreatePersonDto
         {
@@ -245,19 +196,14 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_WithBiography_SanitizesHtml()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         _mockHtmlSanitizer
             .Setup(x => x.Sanitize("<script>alert('xss')</script>"))
             .Returns("alert('xss')");
 
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        
-        context.Users.Add(owner);
-        context.FamilyTrees.Add(tree);
-        await context.SaveChangesAsync();
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
 
         var dto = new CreatePersonDto
         {
@@ -280,15 +226,10 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_TrimsWhitespace_FromAllFields()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        
-        context.Users.Add(owner);
-        context.FamilyTrees.Add(tree);
-        await context.SaveChangesAsync();
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
 
         var dto = new CreatePersonDto
         {
@@ -320,15 +261,10 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_EmptyBiography_SetsToNull()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        
-        context.Users.Add(owner);
-        context.FamilyTrees.Add(tree);
-        await context.SaveChangesAsync();
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
 
         var dto = new CreatePersonDto
         {
@@ -351,15 +287,10 @@ public class FamilyMemberServiceTests
     public async Task AddPersonToTreeAsync_LogsInformation_OnSuccess()
     {
         // Arrange
-        var context = GetInMemoryDbContext();
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(context, _mockHtmlSanitizer.Object, _mockLogger.Object);
 
-        var owner = new User { Id = 1, UserName = "owner", Email = "owner@test.com" };
-        var tree = new FamilyTree { Id = 1, Name = "Test Tree", OwnerId = 1, Owner = owner };
-        
-        context.Users.Add(owner);
-        context.FamilyTrees.Add(tree);
-        await context.SaveChangesAsync();
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
 
         var dto = new CreatePersonDto
         {
