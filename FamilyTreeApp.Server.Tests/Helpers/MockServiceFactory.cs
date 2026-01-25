@@ -1,5 +1,7 @@
 using FamilyTreeApp.Server.Interfaces;
+using FamilyTreeApp.Server.Models;
 using FamilyTreeApp.Server.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -29,5 +31,11 @@ public static class MockServiceFactory
     {
         // If you have a real implementation for integration tests
         return new HtmlSanitizerService();
+    }
+
+    public static Mock<UserManager<User>> CreateUserManager()
+    {
+        var store = new Mock<IUserStore<User>>();
+        return new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
     }
 }
