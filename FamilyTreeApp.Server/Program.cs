@@ -145,7 +145,7 @@ if (dbType.ToLower() == "postgres")
     var database = builder.Configuration["POSTGRES_DB"];
     var username = builder.Configuration["POSTGRES_USER"];
     var password = builder.Configuration["POSTGRES_PASSWORD"];
-    var port = builder.Configuration["POSTGRES_PORT"] ?? "5432"; // Port is OK as default
+    var port = builder.Configuration["POSTGRES_PORT"] ?? "5432";
 
     // Validate all required values are present
     if (string.IsNullOrEmpty(host))
