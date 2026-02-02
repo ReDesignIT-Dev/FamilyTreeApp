@@ -53,6 +53,15 @@ public static class TestDataSeeder
         };
     }
 
+    public static TreeMember CreateTestTreeMember(int treeId, int personId)
+    {
+        return new TreeMember
+        {
+            FamilyTreeId = treeId,
+            PersonId = personId
+        };
+    }
+
     /// <summary>
     /// Seeds a basic test scenario: one owner with one family tree
     /// </summary>
