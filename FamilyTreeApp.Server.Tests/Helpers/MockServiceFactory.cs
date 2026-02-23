@@ -36,6 +36,6 @@ public static class MockServiceFactory
     public static Mock<UserManager<User>> CreateUserManager()
     {
         var store = new Mock<IUserStore<User>>();
-        return new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
+        return new Mock<UserManager<User>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
     }
 }
