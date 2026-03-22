@@ -11,15 +11,18 @@ public class FamilyMemberService : IFamilyMemberService
     private readonly FamilyTreeContext _context;
     private readonly IHtmlSanitizerService _htmlSanitizer;
     private readonly ILogger<FamilyMemberService> _logger;
+    private readonly IPersonFactory _personFactory;
 
     public FamilyMemberService(
         FamilyTreeContext context,
         IHtmlSanitizerService htmlSanitizer,
-        ILogger<FamilyMemberService> logger)
+        ILogger<FamilyMemberService> logger,
+        IPersonFactory personFactory)
     {
         _context = context;
         _htmlSanitizer = htmlSanitizer;
         _logger = logger;
+        _personFactory = personFactory;
     }
 
     public async Task<(bool Success, Person? Person, string? Error)> AddPersonToTreeAsync(
@@ -38,22 +41,7 @@ public class FamilyMemberService : IFamilyMemberService
             return (false, null, "You don't have permission to edit this tree");
 
         // Create new person
-        var person = new Person
-        {
-            FirstName = dto.FirstName.Trim(),
-            MiddleName = dto.MiddleName?.Trim(),
-            LastName = dto.LastName.Trim(),
-            MaidenName = dto.MaidenName?.Trim(),
-            BirthDate = dto.BirthDate,
-            BirthPlace = dto.BirthPlace?.Trim(),
-            DeathDate = dto.DeathDate,
-            DeathPlace = dto.DeathPlace?.Trim(),
-            Gender = dto.Gender?.Trim(),
-            Biography = !string.IsNullOrWhiteSpace(dto.Biography) 
-                ? _htmlSanitizer.Sanitize(dto.Biography) 
-                : null,
-            CreatedAt = DateTime.UtcNow
-        };
+        var person = _personFactory.Create(dto);
 
         // Validate dates
         if (person.DeathDate.HasValue && person.BirthDate.HasValue)
@@ -163,19 +151,7 @@ public class FamilyMemberService : IFamilyMemberService
         if (person == null)
             return (false, null, "Person not found");
 
-        // Update person details
-        person.FirstName = dto.FirstName.Trim();
-        person.MiddleName = dto.MiddleName?.Trim();
-        person.LastName = dto.LastName.Trim();
-        person.MaidenName = dto.MaidenName?.Trim();
-        person.BirthDate = dto.BirthDate;
-        person.BirthPlace = dto.BirthPlace?.Trim();
-        person.DeathDate = dto.DeathDate;
-        person.DeathPlace = dto.DeathPlace?.Trim();
-        person.Gender = dto.Gender?.Trim();
-        person.Biography = !string.IsNullOrWhiteSpace(dto.Biography)
-            ? _htmlSanitizer.Sanitize(dto.Biography)
-            : null;
+        _personFactory.ApplyUpdate(person, dto);
 
         // Validate dates
         if (person.DeathDate.HasValue && person.BirthDate.HasValue)
