@@ -40,20 +40,18 @@ public class FamilyMemberService : IFamilyMemberService
         if (!await CanEditTreeAsync(treeId, userId))
             return (false, null, "You don't have permission to edit this tree");
 
-        // Create new person
-        var person = _personFactory.Create(dto);
-
-        // Validate dates
-        if (person.DeathDate.HasValue && person.BirthDate.HasValue)
+        // Validate dates before creating the person
+        if (dto.DeathDate.HasValue && dto.BirthDate.HasValue)
         {
-            if (person.DeathDate < person.BirthDate)
+            if (dto.DeathDate < dto.BirthDate)
                 return (false, null, "Death date cannot be before birth date");
         }
+
+        var person = _personFactory.Create(dto);
 
         _context.People.Add(person);
         await _context.SaveChangesAsync();
 
-        // Add person to tree
         var treeMember = new TreeMember
         {
             FamilyTreeId = treeId,

@@ -1,3 +1,4 @@
+using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
 using FamilyTreeApp.Server.Services;
@@ -12,13 +13,13 @@ public static class MockServiceFactory
     public static Mock<IHtmlSanitizerService> CreateHtmlSanitizer(bool returnInputAsIs = true)
     {
         var mock = new Mock<IHtmlSanitizerService>();
-        
+
         if (returnInputAsIs)
         {
             mock.Setup(x => x.Sanitize(It.IsAny<string>()))
                 .Returns((string input) => input);
         }
-        
+
         return mock;
     }
 
@@ -27,9 +28,24 @@ public static class MockServiceFactory
         return new Mock<ILogger<T>>();
     }
 
+    public static Mock<IPersonFactory> CreatePersonFactory()
+    {
+        var mock = new Mock<IPersonFactory>();
+
+        mock.Setup(f => f.Create(It.IsAny<CreatePersonDto>()))
+            .Returns((CreatePersonDto dto) => new Person
+            {
+                FirstName = dto.FirstName ?? string.Empty,
+                LastName = dto.LastName ?? string.Empty
+            });
+
+        mock.Setup(f => f.ApplyUpdate(It.IsAny<Person>(), It.IsAny<UpdatePersonDto>()));
+
+        return mock;
+    }
+
     public static IHtmlSanitizerService CreateRealHtmlSanitizer()
     {
-        // If you have a real implementation for integration tests
         return new HtmlSanitizerService();
     }
 

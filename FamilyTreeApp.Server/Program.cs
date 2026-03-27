@@ -48,7 +48,7 @@ builder.Services.AddScoped<IHtmlSanitizerService, HtmlSanitizerService>();
 builder.Services.AddScoped<IMediaService, MediaService>(); 
 builder.Services.AddScoped<IFamilyMemberService, FamilyMemberService>();
 builder.Services.AddScoped<IFamilyTreeService, FamilyTreeService>();
-builder.Services.AddScoped<PersonFactory>();
+builder.Services.AddScoped<IPersonFactory, PersonFactory>();
 
 // Configure Identity BEFORE authentication
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>

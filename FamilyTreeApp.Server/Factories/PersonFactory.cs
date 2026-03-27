@@ -4,7 +4,7 @@ using FamilyTreeApp.Server.Models;
 
 namespace FamilyTreeApp.Server.Factories;
 
-public class PersonFactory
+public class PersonFactory : IPersonFactory
 {
     private readonly IHtmlSanitizerService _htmlSanitizer;
 
