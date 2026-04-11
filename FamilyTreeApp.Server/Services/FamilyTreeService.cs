@@ -25,7 +25,7 @@ public class FamilyTreeService : IFamilyTreeService
     }
 
     public async Task<(bool Success, FamilyTreeDto? Tree, string? Error)> CreateTreeAsync(
-        int userId, 
+        int userId,
         CreateTreeDto dto)
     {
         var tree = new FamilyTree
@@ -47,13 +47,16 @@ public class FamilyTreeService : IFamilyTreeService
 
     public async Task<(bool Success, List<TreeSummaryDto>? Trees, string? Error)> GetUserTreesAsync(int userId)
     {
+        // ✅ AsNoTracking — read-only queries
         var ownedTrees = await _context.FamilyTrees
+            .AsNoTracking()
             .Where(t => t.OwnerId == userId)
             .Include(t => t.Members)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
         var sharedTrees = await _context.TreeCollaborators
+            .AsNoTracking()
             .Where(tc => tc.UserId == userId)
             .Include(tc => tc.FamilyTree)
                 .ThenInclude(t => t.Members)
@@ -71,10 +74,12 @@ public class FamilyTreeService : IFamilyTreeService
     }
 
     public async Task<(bool Success, FamilyTreeDto? Tree, string? Error)> GetTreeByIdAsync(
-        int treeId, 
+        int treeId,
         int userId)
     {
+        // ✅ AsNoTracking — read-only query
         var tree = await _context.FamilyTrees
+            .AsNoTracking()
             .Include(t => t.Owner)
             .Include(t => t.Members)
             .Include(t => t.Collaborators)
@@ -84,7 +89,6 @@ public class FamilyTreeService : IFamilyTreeService
         if (tree == null)
             return (false, null, "Family tree not found");
 
-        // Check access permissions
         if (!await HasAccessToTree(tree, userId))
             return (false, null, "You don't have access to this tree");
 
@@ -92,10 +96,12 @@ public class FamilyTreeService : IFamilyTreeService
     }
 
     public async Task<(bool Success, FamilyTreeDto? Tree, string? Error)> UpdateTreeAsync(
-        int treeId, 
-        int userId, 
+        int treeId,
+        int userId,
         UpdateTreeDto dto)
     {
+        // ✅ No AsNoTracking — needs tracking for SaveChanges
+        // ✅ Includes kept — Owner and Members used in MapToFamilyTreeDto
         var tree = await _context.FamilyTrees
             .Include(t => t.Owner)
             .Include(t => t.Members)
@@ -104,7 +110,6 @@ public class FamilyTreeService : IFamilyTreeService
         if (tree == null)
             return (false, null, "Family tree not found");
 
-        // Only owner or collaborators with Admin permission can update
         if (!await CanEditTree(tree, userId))
             return (false, null, "You don't have permission to edit this tree");
 
@@ -122,6 +127,7 @@ public class FamilyTreeService : IFamilyTreeService
 
     public async Task<(bool Success, string? Error)> DeleteTreeAsync(int treeId, int userId)
     {
+        // ✅ No AsNoTracking — needs tracking for Remove + SaveChanges
         var tree = await _context.FamilyTrees
             .Include(t => t.Members)
             .Include(t => t.Collaborators)
@@ -130,7 +136,6 @@ public class FamilyTreeService : IFamilyTreeService
         if (tree == null)
             return (false, "Family tree not found");
 
-        // Only owner can delete
         if (tree.OwnerId != userId)
             return (false, "Only the owner can delete this tree");
 
@@ -143,10 +148,11 @@ public class FamilyTreeService : IFamilyTreeService
     }
 
     public async Task<(bool Success, CollaboratorDto? Collaborator, string? Error)> ShareTreeAsync(
-        int treeId, 
-        int userId, 
+        int treeId,
+        int userId,
         ShareTreeDto dto)
     {
+        // ✅ No AsNoTracking — needs tracking for Add + SaveChanges
         var tree = await _context.FamilyTrees
             .Include(t => t.Collaborators)
             .FirstOrDefaultAsync(t => t.Id == treeId);
@@ -154,23 +160,19 @@ public class FamilyTreeService : IFamilyTreeService
         if (tree == null)
             return (false, null, "Family tree not found");
 
-        // Only owner or Admin collaborators can share
         if (!await CanManageCollaborators(tree, userId))
             return (false, null, "You don't have permission to share this tree");
 
-        // Find user by email
         var targetUser = await _userManager.FindByEmailAsync(dto.UserEmail);
         if (targetUser == null)
             return (false, null, "User not found");
 
-        // Check if already a collaborator
         var existingCollaborator = await _context.TreeCollaborators
             .FirstOrDefaultAsync(tc => tc.FamilyTreeId == treeId && tc.UserId == targetUser.Id);
 
         if (existingCollaborator != null)
             return (false, null, "User is already a collaborator");
 
-        // Can't share with owner
         if (tree.OwnerId == targetUser.Id)
             return (false, null, "Cannot share tree with its owner");
 
@@ -203,10 +205,12 @@ public class FamilyTreeService : IFamilyTreeService
     }
 
     public async Task<(bool Success, List<CollaboratorDto>? Collaborators, string? Error)> GetCollaboratorsAsync(
-        int treeId, 
+        int treeId,
         int userId)
     {
+        // ✅ AsNoTracking — read-only query
         var tree = await _context.FamilyTrees
+            .AsNoTracking()
             .Include(t => t.Collaborators)
                 .ThenInclude(c => c.User)
             .FirstOrDefaultAsync(t => t.Id == treeId);
@@ -231,8 +235,8 @@ public class FamilyTreeService : IFamilyTreeService
     }
 
     public async Task<(bool Success, string? Error)> RemoveCollaboratorAsync(
-        int treeId, 
-        int collaboratorId, 
+        int treeId,
+        int collaboratorId,
         int userId)
     {
         var tree = await _context.FamilyTrees.FindAsync(treeId);
@@ -259,28 +263,17 @@ public class FamilyTreeService : IFamilyTreeService
     // Helper methods
     private async Task<bool> HasAccessToTree(FamilyTree tree, int userId)
     {
-        // Owner has access
-        if (tree.OwnerId == userId)
-            return true;
+        if (tree.OwnerId == userId) return true;
+        if (tree.IsPublic) return true;
 
-        // Public trees are accessible
-        if (tree.IsPublic)
-            return true;
-
-        // Check if user is a collaborator
-        var isCollaborator = await _context.TreeCollaborators
+        return await _context.TreeCollaborators
             .AnyAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return isCollaborator;
     }
 
     private async Task<bool> CanEditTree(FamilyTree tree, int userId)
     {
-        // Owner can edit
-        if (tree.OwnerId == userId)
-            return true;
+        if (tree.OwnerId == userId) return true;
 
-        // Check if collaborator has Edit or Admin permission
         var collaborator = await _context.TreeCollaborators
             .FirstOrDefaultAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
 
@@ -289,11 +282,8 @@ public class FamilyTreeService : IFamilyTreeService
 
     private async Task<bool> CanManageCollaborators(FamilyTree tree, int userId)
     {
-        // Owner can manage
-        if (tree.OwnerId == userId)
-            return true;
+        if (tree.OwnerId == userId) return true;
 
-        // Check if collaborator has Admin permission
         var collaborator = await _context.TreeCollaborators
             .FirstOrDefaultAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
 
