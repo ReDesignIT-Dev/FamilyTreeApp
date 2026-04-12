@@ -1,4 +1,4 @@
-import { getToken, getValidatedToken } from "./cookies";
+import { getValidatedToken } from "./cookies";
 
 export function isEmailValid(emailToTest: string): boolean {
   const emailRegex = 

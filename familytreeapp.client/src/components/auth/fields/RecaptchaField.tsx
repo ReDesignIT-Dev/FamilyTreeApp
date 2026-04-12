@@ -1,4 +1,4 @@
-import { RECAPTCHA_SITEKEY } from "config";
+import { RECAPTCHA_SITEKEY } from "@/config";
 import React, { useState, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 

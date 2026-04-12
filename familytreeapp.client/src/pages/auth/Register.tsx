@@ -1,8 +1,8 @@
 import React from "react";
-import RegisterFormComponent from "components/RegisterFormComponent";
-import { FRONTEND_LOGIN_URL } from "config";
+import RegisterFormComponent from "@/components/auth/RegisterFormComponent";
+import { FRONTEND_LOGIN_URL } from "@/config";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { Box, Button, Typography } from "@mui/material";
 
 const Register: React.FC = () => {

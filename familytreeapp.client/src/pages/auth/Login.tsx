@@ -1,8 +1,8 @@
 ﻿import React from "react";
-import LoginFormComponent from "components/auth/LoginFormComponent";
+import LoginFormComponent from "@/components/auth/LoginFormComponent";
 import { useNavigate } from "react-router-dom";
-import { FRONTEND_REGISTER_URL } from "config";
-import { useAuth } from "hooks/useAuth";
+import { FRONTEND_REGISTER_URL } from "@/config";
+import { useAuth } from "@/hooks/useAuth";
 import { Box, Button, Typography } from "@mui/material";
 
 const Login: React.FC = () => {

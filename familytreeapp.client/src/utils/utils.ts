@@ -1,7 +1,7 @@
-import apiClient from "services/axiosConfig";
+import apiClient from "@/services/axiosConfig";
 
 export function getIdFromSlug(slug: string): number | null {
-    const idMatch = slug.match(/(\d+)$/); // Matches the last group of digits in the slug
+    const idMatch = slug.match(/(\d+)$/);
     return idMatch ? parseInt(idMatch[1], 10) : null;
   }
   

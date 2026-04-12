@@ -1,25 +1,18 @@
 ﻿import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { useAuth } from './useAuth';
-import { selectLastShopLocation } from 'reduxComponents/reduxShop/Navigation/navigationSelectors';
+import { useAuth } from '@/hooks/useAuth';
+import { FRONTEND_URL } from '@/config'; 
 
-export const useLoginRedirect = (defaultRedirect = '/shop') => {
+export const useLoginRedirect = (defaultRedirect = FRONTEND_URL) => {
     const isLoggedIn = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-
-    const lastShopLocation = useSelector(selectLastShopLocation);
 
     const getRedirectDestination = () => {
         if (location.state?.from) {
             return location.state.from;
         }
-        if (lastShopLocation && lastShopLocation !== '/' && lastShopLocation.includes('/shop')) {
-            return { pathname: lastShopLocation };
-        }
-
-        return { pathname: defaultRedirect };
+         return { pathname: defaultRedirect };
     };
 
     const redirectTo = getRedirectDestination();

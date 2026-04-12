@@ -1,5 +1,6 @@
-import { isEmailValid } from "utils/validation";
-import { useEffect, ChangeEvent } from "react";
+import { isEmailValid } from "@/utils/validation";
+import { useEffect } from "react";
+import type { ChangeEvent } from "react";
 import { TextField, Box } from "@mui/material";
 
 interface EmailFieldProps {

@@ -23,9 +23,7 @@ function getUsernameFromToken(token: string): string | null {
     try {
         const payload = decodeJwtPayload(token);
         if (!payload) return null;
-
-        // The username might be in different claims, try common ones
-        return payload.unique_name || payload.username || payload.name || payload.sub || null;
+        return payload.unique_name ?? null;
     } catch (e) {
         console.error("Failed to get username from JWT:", e);
         return null;

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
+import type { ChangeEvent } from "react";
+
 import {
   TextField,
   IconButton,

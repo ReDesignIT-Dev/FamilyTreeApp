@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import NewPasswordField from "./NewPasswordField";
-import PasswordRepeatField from "./PasswordConfirmField";
+import NewPasswordField from "@/components/auth/fields/NewPasswordField";
+import PasswordRepeatField from "@/components/auth/fields/PasswordConfirmField";
 
 interface NewPasswordWithPasswordRepeatFieldProps {
   customClassesForNewPassword: string;

@@ -1,5 +1,6 @@
-import axios, { AxiosInstance } from 'axios';
-import { BACKEND_BASE_URL } from 'config';
+import axios from 'axios';
+import type { AxiosInstance } from 'axios';
+import { BACKEND_BASE_URL } from '@/config';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: BACKEND_BASE_URL,

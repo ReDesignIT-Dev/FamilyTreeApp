@@ -1,13 +1,14 @@
-import UsernameField from "./Fields/UsernameField";
-import EmailField from "components/Fields/EmailField";
-import NewPasswordWithPasswordRepeatField from "./Fields/NewPasswordWithPasswordRepeatField";
-import RecaptchaField from "components/Fields/RecaptchaField";
-import { useEffect, useState, FormEvent } from "react";
-import Loading from "components/Loading";
-import { registerUser } from "services/apiRequestsUser";
+import UsernameField from "@/components/auth/fields/UsernameField";
+import EmailField from "@/components/auth/fields/EmailField";
+import NewPasswordWithPasswordRepeatField from "@/components/auth/fields/NewPasswordWithPasswordRepeatField";
+import RecaptchaField from "@/components/auth/fields/RecaptchaField";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import Loading from "@/components/common/Loading";
+import { registerUser } from "@/services/auth/apiRequestsUser";
 import "./RegisterFormComponent.css"; // Import the CSS file
-import { GeneralApiError, MultipleFieldErrors } from "services/CustomErrors";
-import { useAuth } from "hooks/useAuth";
+import { GeneralApiError, MultipleFieldErrors } from "@/services/CustomErrors";
+import { useAuth } from "@/hooks/useAuth";
 
 const RegisterFormComponent: React.FC = () => {
   const [isValid, setIsValid] = useState<boolean>(false);

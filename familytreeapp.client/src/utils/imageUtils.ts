@@ -1,4 +1,4 @@
-import { SHOP_DEFAULT_IMAGE } from "../config";
+import { DEFAULT_IMAGE } from "@/config";
 
 interface ImageData {
   url?: string;
@@ -15,7 +15,7 @@ interface SafeImage {
 export const createSafeImage = (
   imageData: ImageData | null | undefined,
     fallbackAltText = "Product image",
-    defaultImageUrl = SHOP_DEFAULT_IMAGE
+    defaultImageUrl = DEFAULT_IMAGE
 ): SafeImage => {
   return {
     url: imageData?.url || defaultImageUrl,

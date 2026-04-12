@@ -1,6 +1,7 @@
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
+import type { ChangeEvent } from "react";
 import { TextField, Box } from "@mui/material";
-import { FIELD_LIMITS } from "constants/validation";
+import { FIELD_LIMITS } from "@/constants/validation";
 
 interface UsernameFieldProps {
   value: string;

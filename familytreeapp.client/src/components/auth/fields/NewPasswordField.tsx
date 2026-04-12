@@ -1,4 +1,6 @@
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { useState, useEffect } from "react";
+import type { ChangeEvent } from "react";
+
 import {
   isPasswordValid,
   isLengthValid,
@@ -6,7 +8,7 @@ import {
   isLowercaseValid,
   isSpecialCharValid,
   isUppercaseValid,
-} from "utils/validation";
+} from "@/utils/validation";
 import {
   TextField,
   Typography,
