@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using FamilyTreeApp.Server.Enums;
 
-namespace ShopAPI.Controllers;
+namespace FamilyTreeApp.Server.Controllers;
 
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AdminAndActive")]
 [ApiController]
-[Route("api/shop/[controller]")]
+[Route("familytreeapp-api/[controller]")]
 public class UserRolesController : ControllerBase
 {
     private readonly IUserRoleService _userRoleService;

@@ -11,7 +11,8 @@ using FamilyTreeApp.Server.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
-namespace ShopAPI.Controllers;
+
+namespace FamilyTreeApp.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -67,7 +68,7 @@ public class AuthController : ControllerBase
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var frontendBaseUrl = _config["Frontend:BaseUrl"];
-        var confirmationLink = $"{frontendBaseUrl}/shop/activate/{user.Id}/{WebUtility.UrlEncode(token)}";
+        var confirmationLink = $"{frontendBaseUrl}/auth/activate/{user.Id}/{WebUtility.UrlEncode(token)}";
         var subject = "Activate Your Account";
         var body = _emailService.GetActivationEmailBody(user.UserName ?? user.Email!, confirmationLink!);
         await _emailService.SendAsync(user.Email!, subject, body);
