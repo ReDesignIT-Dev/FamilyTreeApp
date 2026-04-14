@@ -5,9 +5,9 @@ import Loading from "@/components/common/Loading";
 import { useLoginRedirect } from '@/hooks/useLoginRedirect';
 import { loginUser } from "@/reduxComponents/reduxUser/Auth/authReducer";
 import type { AppDispatch, RootState } from "@/reduxComponents/store";
+import { Alert, Box, Button, Paper, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import "./LoginFormComponent.css";
 import type { FormEvent } from "react";
 
 const LoginFormComponent: React.FC = () => {
@@ -37,46 +37,61 @@ const LoginFormComponent: React.FC = () => {
     };
 
     return (
-        <div>
+        <Box display="flex" justifyContent="center" alignItems="center">
             {isLoading ? (
                 <Loading />
             ) : isLoggedIn ? (
-                <label className="alert alert-success">
-                    {"Login successful! Redirecting..."}
-                </label>
+                <Alert severity="success">Login successful! Redirecting...</Alert>
             ) : (
-                <form
-                    onSubmit={handleSubmit}
-                    className="login-form-custom d-flex flex-column justify-content-center align-items-center mx-auto"
+                <Paper
+                    elevation={3}
+                    sx={{ p: 4, width: "100%", maxWidth: 400 }}
                 >
-                    <div className="input-group-login">
-                        <EmailField
-                            value={email}
-                            onChange={setEmail}
-                            onValidate={setIsEmailValid}
-                            disabled={false}
-                        />
-                    </div>
-                    <div className="input-group-login">
-                        <PasswordField
+                    <Typography variant="h5" align="center" gutterBottom>
+                        Sign In
+                    </Typography>
+                    <Box
+                        component="form"
+                        onSubmit={handleSubmit}
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                        gap={2}
+                    >
+                        <Box width="100%">
+                            <EmailField
+                                value={email}
+                                onChange={setEmail}
+                                onValidate={setIsEmailValid}
+                                disabled={false}
+                            />
+                        </Box>
+                        <Box width="100%">
+                            <PasswordField
+                                customClasses="w-100"
+                                value={password}
+                                onChange={setPassword}
+                                onValidate={setIsPasswordValid}
+                            />
+                        </Box>
+                        <RecaptchaField
+                            onValidate={setIsValidRecaptchaToken}
+                            setReturnToken={setReCaptchaToken}
                             customClasses="w-100"
-                            value={password}
-                            onChange={setPassword}
-                            onValidate={setIsPasswordValid}
                         />
-                    </div>
-                    <RecaptchaField
-                        onValidate={setIsValidRecaptchaToken}
-                        setReturnToken={setReCaptchaToken}
-                        customClasses="w-100"
-                    />
-                    <button type="submit" className="btn btn-primary mt-3" disabled={!isValid}>
-                        Submit
-                    </button>
-                    {error && <label className="alert alert-warning">{error}</label>}
-                </form>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            disabled={!isValid}
+                        >
+                            Submit
+                        </Button>
+                        {error && <Alert severity="warning" sx={{ width: "100%" }}>{error}</Alert>}
+                    </Box>
+                </Paper>
             )}
-        </div>
+        </Box>
     );
 };
 
