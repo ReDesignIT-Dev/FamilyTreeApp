@@ -39,9 +39,6 @@ if (isDev) {
         }
     }
 
-    const target = env.ASPNETCORE_HTTPS_PORT ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}` :
-        env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0] : 'https://localhost:7068';
-
     serverConfig = {
         port: parseInt(env.DEV_SERVER_PORT || '52177'),
         https: {
