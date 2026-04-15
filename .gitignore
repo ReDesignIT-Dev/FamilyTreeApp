@@ -177,3 +177,5 @@ secrets.json
 /ini .env.dev
 /ini familytreeapp.client/.env.production
 /ini familytreeapp.client/.env.development
+/familytreeapp.client/.env.development
+/familytreeapp.client/.env.production
