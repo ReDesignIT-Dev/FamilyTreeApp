@@ -28,11 +28,9 @@ Log.Logger = new LoggerConfiguration()
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-//builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add health checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<FamilyTreeContext>();
 
@@ -50,7 +48,6 @@ builder.Services.AddScoped<IFamilyMemberService, FamilyMemberService>();
 builder.Services.AddScoped<IFamilyTreeService, FamilyTreeService>();
 builder.Services.AddScoped<IPersonFactory, PersonFactory>();
 
-// Configure Identity BEFORE authentication
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {
     options.SignIn.RequireConfirmedEmail = true;
@@ -71,7 +68,6 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 
 builder.Services.AddAuthentication(options =>
 {
-    // Override the defaults set by AddIdentity
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -117,7 +113,6 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// Enhanced CORS configuration
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(corsBuilder =>
@@ -172,7 +167,6 @@ else
     throw new InvalidOperationException("Unsupported DEV_DB type. Use 'sqlite' or 'postgres'.");
 }
 
-// Configure Data Protection for production - MOVE THIS BEFORE builder.Build()
 if (builder.Environment.IsProduction())
 {
     var keysPath = builder.Configuration["Keys_Path"];
@@ -187,14 +181,12 @@ if (builder.Environment.IsProduction())
 
 var app = builder.Build();
 app.UseCors();
-app.UseDefaultFiles();
-app.MapStaticAssets();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<FamilyTreeContext>();
@@ -251,11 +243,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseAuthentication();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
-app.MapFallbackToFile("/index.html");
 
 app.Run();

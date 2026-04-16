@@ -1,9 +1,9 @@
 ﻿import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { FRONTEND_URL } from '@/config'; 
+import { FRONTEND_BASE_URL } from '@/config'; 
 
-export const useLoginRedirect = (defaultRedirect = FRONTEND_URL) => {
+export const useLoginRedirect = (defaultRedirect = FRONTEND_BASE_URL) => {
     const isLoggedIn = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
