@@ -19,15 +19,16 @@ import {
   Home,
   Settings,
 } from '@mui/icons-material';
+import { PATH_HOME, PATH_TREES, PATH_SETTINGS, PATH_AUTH_LOGIN } from '@/router/routes';
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
   const menuItems = [
-    { text: 'Home', icon: <Home />, path: '/' },
-    { text: 'My Family Trees', icon: <AccountTree />, path: '/trees' },
-    { text: 'Settings', icon: <Settings />, path: '/settings' },
+    { text: 'Home', icon: <Home />, path: PATH_HOME },
+    { text: 'My Family Trees', icon: <AccountTree />, path: PATH_TREES },
+    { text: 'Settings', icon: <Settings />, path: PATH_SETTINGS },
   ];
 
   const handleNavigate = (path: string) => {
@@ -53,7 +54,7 @@ export default function Header() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Family Tree App
           </Typography>
-          <IconButton color="inherit" onClick={() => navigate('/auth')}>
+          <IconButton color="inherit" aria-label="account" onClick={() => navigate(PATH_AUTH_LOGIN)}>
             <Person />
           </IconButton>
         </Toolbar>

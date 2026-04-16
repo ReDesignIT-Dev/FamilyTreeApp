@@ -43,22 +43,24 @@ interface AuthTokenResponse {
   token: string;
 }
 
-type ApiResponse<T = any> = AxiosResponse<T>;
-
+type ApiResponse<T = unknown> = AxiosResponse<T>;
 
 function handleApiError(error: unknown): void {
   if (error instanceof AxiosError) {
     apiErrorHandler(error);
   } else {
-    console.error("An unexpected error occurred:", error);
     throw new Error("An unexpected error occurred");
   }
 }
 
-async function makePostRequest<T>(endpoint: string, data: Record<string, any>, additionalHeaders?: Record<string, string>): Promise<ApiResponse<T> | undefined> {
+async function makePostRequest<T>(
+  endpoint: string,
+  data: Record<string, unknown>,
+  additionalHeaders?: Record<string, string>
+): Promise<ApiResponse<T> | undefined> {
   try {
     const response = await apiClient.post<T>(endpoint, data, {
-      headers: getHeaders(additionalHeaders)
+      headers: getHeaders(additionalHeaders),
     });
     return response;
   } catch (error: unknown) {
@@ -66,13 +68,19 @@ async function makePostRequest<T>(endpoint: string, data: Record<string, any>, a
   }
 }
 
-export async function postData(endpoint: string, data: Record<string, any>): Promise<ApiResponse | undefined> {
+export async function postData(
+  endpoint: string,
+  data: Record<string, unknown>
+): Promise<ApiResponse | undefined> {
   return makePostRequest(endpoint, data);
 }
 
-export async function postLogin({ username, password, recaptchaToken }: LoginData): Promise<ApiResponse<AuthTokenResponse> | undefined> {
-  const authString = `${username}:${password}`;
-  const encodedAuthString = btoa(authString);
+export async function postLogin({
+  username,
+  password,
+  recaptchaToken,
+}: LoginData): Promise<ApiResponse<AuthTokenResponse> | undefined> {
+  const encodedAuthString = btoa(`${username}:${password}`);
 
   const response = await makePostRequest<AuthTokenResponse>(
     API_LOGIN_USER_URL,
@@ -81,21 +89,19 @@ export async function postLogin({ username, password, recaptchaToken }: LoginDat
   );
 
   if (response?.status === 200) {
-    const token = response.data.token;
-    setToken(token);
+    setToken(response.data.token);
   }
   return response;
 }
 
 export async function registerUser(data: RegisterData): Promise<ApiResponse | undefined> {
-  const payload = {
+  return makePostRequest(API_REGISTER_USER_URL, {
     username: data.username,
     email: data.email,
     password: data.password,
-    passwordConfirm: data.passwordConfirm, 
-    recaptchaToken: data.recaptchaToken, 
-  };
-  return makePostRequest(API_REGISTER_USER_URL, payload);
+    passwordConfirm: data.passwordConfirm,
+    recaptchaToken: data.recaptchaToken,
+  });
 }
 
 export async function getData(endpoint: string): Promise<ApiResponse | undefined> {
@@ -107,12 +113,13 @@ export async function getData(endpoint: string): Promise<ApiResponse | undefined
   }
 }
 
-export async function getDataUsingUserToken(endpoint: string, token: string): Promise<ApiResponse | undefined> {
+export async function getDataUsingUserToken(
+  endpoint: string,
+  token: string
+): Promise<ApiResponse | undefined> {
   try {
     const response = await apiClient.get(endpoint, {
-      headers: getHeaders({
-        Authorization: `Bearer ${token}`
-      })
+      headers: getHeaders({ Authorization: `Bearer ${token}` }),
     });
     return response;
   } catch (error: unknown) {
@@ -120,15 +127,20 @@ export async function getDataUsingUserToken(endpoint: string, token: string): Pr
   }
 }
 
-export async function activateUser(userId: number, token: string): Promise<ApiResponse | undefined> {
-    const url = `${API_ACTIVATE_USER_URL}?userId=${userId}&token=${encodeURIComponent(token)}`;
-    return getData(url);
+export async function activateUser(
+  userId: number,
+  token: string
+): Promise<ApiResponse | undefined> {
+  const url = `${API_ACTIVATE_USER_URL}?userId=${userId}&token=${encodeURIComponent(token)}`;
+  return getData(url);
 }
 
-export async function validatePasswordResetToken(token: string): Promise<ApiResponse | undefined> {
+export async function validatePasswordResetToken(
+  token: string
+): Promise<ApiResponse | undefined> {
   try {
     const response = await apiClient.get(`${API_PASSWORD_RESET_URL}/${token}`, {
-      headers: getHeaders()
+      headers: getHeaders(),
     });
     return response;
   } catch (error: unknown) {
@@ -136,11 +148,16 @@ export async function validatePasswordResetToken(token: string): Promise<ApiResp
   }
 }
 
-export async function postPasswordReset(token: string, data: PasswordResetData): Promise<ApiResponse | undefined> {
+export async function postPasswordReset(
+  token: string,
+  data: PasswordResetData
+): Promise<ApiResponse | undefined> {
   return makePostRequest(`${API_PASSWORD_RESET_URL}/${token}`, data);
 }
 
-export async function postPasswordRecovery(data: PasswordRecoveryData): Promise<ApiResponse | undefined> {
+export async function postPasswordRecovery(
+  data: PasswordRecoveryData
+): Promise<ApiResponse | undefined> {
   return makePostRequest(API_PASSWORD_RESET_URL, data);
 }
 
@@ -149,11 +166,9 @@ export async function logoutUser(): Promise<void> {
   try {
     if (token) {
       await makePostRequest(API_LOGOUT_USER_URL, {}, { Authorization: `Bearer ${token}` });
-      console.log("Logged out successfully");
     }
   } catch (error: unknown) {
-    if (error instanceof AxiosError && error.response && error.response.status === 401) {
-      console.log("Unauthorized: Already logged out or token invalid.");
+    if (error instanceof AxiosError && error.response?.status === 401) {
       return;
     }
     handleApiError(error);

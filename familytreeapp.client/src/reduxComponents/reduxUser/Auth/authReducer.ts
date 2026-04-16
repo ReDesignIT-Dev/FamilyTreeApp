@@ -1,6 +1,7 @@
 ﻿import { logoutUser, postLogin } from "@/services/auth/apiRequestsUser";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { decodeJwtPayload, getIsAdminFromJwt, getValidatedToken, isTokenValid, isUserAdmin, setToken } from "@/utils/cookies";
+import { AxiosError } from "axios";
 
 interface AuthState {
     isLoggedIn: boolean;
@@ -13,7 +14,6 @@ interface AuthState {
 
 interface LoginResponse {
     token: string;
-    expiry: string;
     username: string;
     isAdmin: boolean;
 }
@@ -24,36 +24,40 @@ function getUsernameFromToken(token: string): string | null {
         const payload = decodeJwtPayload(token);
         if (!payload) return null;
         return payload.unique_name ?? null;
-    } catch (e) {
-        console.error("Failed to get username from JWT:", e);
+    } catch {
         return null;
     }
 }
 
-export const loginUser = createAsyncThunk<LoginResponse, { username: string; password: string; recaptchaToken: string | null }>(
+function extractErrorMessage(error: unknown): string {
+    if (error instanceof AxiosError) {
+        if (error.response) {
+            return error.response.data ?? "Server Error";
+        }
+        if (error.request) {
+            return "No response from server";
+        }
+    }
+    return "Invalid username or password";
+}
+
+export const loginUser = createAsyncThunk<
+    LoginResponse,
+    { username: string; password: string; recaptchaToken: string | null }
+>(
     "auth/loginUser",
     async ({ username, password, recaptchaToken }, { rejectWithValue }) => {
         try {
             const response = await postLogin({ username, password, recaptchaToken });
             if (response && response.status === 200) {
-                const { token, username } = response.data as LoginResponse;
+                const { token, username: responseUsername } = response.data as LoginResponse;
                 setToken(token);
                 const isAdmin = getIsAdminFromJwt(token);
-                return { token, username, isAdmin, expiry: "" };
-            } else {
-                return rejectWithValue("Unexpected response status");
+                return { token, username: responseUsername, isAdmin };
             }
-        } catch (error: any) {
-            if (error.response) {
-                console.error("Error Response:", error.response);
-                return rejectWithValue(error.response.data || "Server Error");
-            } else if (error.request) {
-                console.error("No Response Received:", error.request);
-                return rejectWithValue("No response from server");
-            } else {
-                console.error("Error during request setup:", error.message);
-                return rejectWithValue("Invalid username or password");
-            }
+            return rejectWithValue("Unexpected response status");
+        } catch (error: unknown) {
+            return rejectWithValue(extractErrorMessage(error));
         }
     }
 );
@@ -63,8 +67,11 @@ export const logout = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             await logoutUser();
-        } catch (error: any) {
-            return rejectWithValue(error.response ? error.response.data : "Network Error");
+        } catch (error: unknown) {
+            if (error instanceof AxiosError) {
+                return rejectWithValue(error.response ? error.response.data : "Network Error");
+            }
+            return rejectWithValue("Network Error");
         }
     }
 );

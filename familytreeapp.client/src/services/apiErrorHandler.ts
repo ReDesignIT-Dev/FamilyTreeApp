@@ -18,7 +18,6 @@ export function apiErrorHandler(error: unknown): void {
     if (error.response) {
       // Type assertion for the response data
       const responseData = error.response.data as ErrorResponseData;
-
       const errors: { field: string; message: string }[] = [];
 
       if (responseData.username) {
@@ -37,14 +36,11 @@ export function apiErrorHandler(error: unknown): void {
 
       throw new GeneralApiError(`API Error: ${error.response.statusText}`);
     } else if (error.request) {
-      console.error("My handler Network Error:", error.request);
       throw new GeneralApiError("Network Error: Please check your internet connection.");
     } else {
-      console.error("My handler Error:", error.message);
       throw new GeneralApiError(`Error: ${error.message}`);
     }
   } else {
-    console.error("Unknown Error:", error);
     throw new GeneralApiError("An unknown error occurred.");
   }
 }

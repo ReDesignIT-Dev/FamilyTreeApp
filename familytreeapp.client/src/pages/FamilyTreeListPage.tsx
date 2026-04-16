@@ -15,6 +15,7 @@ import {
 import { Add, AccountTree } from '@mui/icons-material';
 import { FamilyTreeService } from '@/services/api/familyTreeService';
 import type { FamilyTree } from '@/types/familyTree.types';
+import { PATH_TREE_DETAIL } from '@/router/routes';
 
 export default function FamilyTreeListPage() {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export default function FamilyTreeListPage() {
   };
 
   const handleViewTree = (treeId: number) => {
-    navigate(`/trees/${treeId}`);
+    navigate(PATH_TREE_DETAIL(String(treeId)));
   };
 
   if (loading) {

@@ -1,21 +1,14 @@
 ﻿import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { FRONTEND_BASE_URL } from '@/config'; 
+import { PATH_HOME } from '@/router/routes';
 
-export const useLoginRedirect = (defaultRedirect = FRONTEND_BASE_URL) => {
+export const useLoginRedirect = (defaultRedirect = PATH_HOME) => {
     const isLoggedIn = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const getRedirectDestination = () => {
-        if (location.state?.from) {
-            return location.state.from;
-        }
-         return { pathname: defaultRedirect };
-    };
-
-    const redirectTo = getRedirectDestination();
+    const redirectTo: string = location.state?.from ?? defaultRedirect;
 
     useEffect(() => {
         if (isLoggedIn) {
