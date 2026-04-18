@@ -3,7 +3,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { decodeJwtPayload, getIsAdminFromJwt, getValidatedToken, isTokenValid, isUserAdmin, setToken } from "@/utils/cookies";
 import { AxiosError } from "axios";
 
-interface AuthState {
+export interface AuthState {
     isLoggedIn: boolean;
     username: string | null;
     token: string | null;

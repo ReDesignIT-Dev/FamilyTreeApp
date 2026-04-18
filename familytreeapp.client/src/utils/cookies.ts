@@ -39,26 +39,14 @@ export const getValidatedToken = (): string | null => {
 
 export const removeToken = (): void => {
   _removeCookie("token");
-  _removeCookie("tokenExpiry");
 };
 
 export const setToken = (token: string): void => {
   const expiryDate = getJwtExpiry(token);
-  if (!expiryDate) {
-    console.error("Failed to get expiry date from token.");
-    throw new Error("Invalid token format or missing expiry date");
+  if (!expiryDate || isNaN(expiryDate.getTime())) {
+    throw new Error("Invalid token: missing or malformed expiry date");
   }
-  if (isNaN(expiryDate.getTime())) {
-    console.error("Invalid expiry date:", expiryDate);
-    throw new Error("Invalid expiry date format");
-  }
-
-  try {
-    _setCookie("token", token, expiryDate);
-    _setCookie("tokenExpiry", expiryDate.toISOString(), expiryDate);
-  } catch (error) {
-    console.error("Failed to set token cookie:", error);
-  }
+  _setCookie("token", token, expiryDate);
 };
 
 export const isUserAdmin = (): boolean => {
@@ -75,29 +63,24 @@ export const removeUserData = (): void => {
   _removeCookie("isAdmin");
 };
 
+// ✅ Single source of truth — read expiry from the JWT itself, not a separate cookie
 export const isTokenValid = (): boolean => {
   const token = _getCookie("token");
-  const tokenExpiry = _getCookie("tokenExpiry");
+  if (!token) return false;
 
-  if (!token) {
-    return false;
-  }
-
-  if (!tokenExpiry) {
-    console.warn("Token expiration date is missing.");
-    return false;
-  }
-
-  const expiryDate = new Date(tokenExpiry);
-  const currentTime = new Date();
-
-  if (currentTime >= expiryDate) {
-    console.warn("Token has expired. Removing it from cookies.");
+  const expiry = getJwtExpiry(token);
+  if (!expiry) {
+    console.warn("Token has no expiry claim.");
     removeToken();
     return false;
   }
 
-  return true;
+  const isValid = new Date() < expiry;
+  if (!isValid) {
+    console.warn("Token has expired.");
+    removeToken();
+  }
+  return isValid;
 };
 
 export function getJwtExpiry(token: string): Date | null {
