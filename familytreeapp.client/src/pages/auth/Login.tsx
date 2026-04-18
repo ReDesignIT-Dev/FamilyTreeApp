@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Box, Button, Typography } from "@mui/material";
 
 const Login: React.FC = () => {
-  const isLoggedIn: boolean = useAuth();
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -19,21 +19,18 @@ const Login: React.FC = () => {
     >
       {!isLoggedIn && (
         <>
-        <Button
-          variant="contained"
-          color="info"
-          onClick={() => {
-            navigate(`${FRONTEND_REGISTER_URL}`, { replace: true });
-          }}
-          sx={{ mt: 2 }}
-        >
-          {`Don't have an account? Click here to register`}
-        </Button>
-      
-        <Typography variant="h5" sx={{ mt: 2 }}>
-          {`Login`}
-        </Typography>
+          <Button
+            variant="contained"
+            color="info"
+            onClick={() => navigate(FRONTEND_REGISTER_URL, { replace: true })}
+            sx={{ mt: 2 }}
+          >
+            {`Don't have an account? Click here to register`}
+          </Button>
 
+          <Typography variant="h5" sx={{ mt: 2 }}>
+            Login
+          </Typography>
         </>
       )}
       <LoginFormComponent />

@@ -15,11 +15,11 @@ import {
 import {
   Menu as MenuIcon,
   AccountTree,
-  Person,
   Home,
   Settings,
 } from '@mui/icons-material';
-import { PATH_HOME, PATH_TREES, PATH_SETTINGS, PATH_AUTH_LOGIN } from '@/router/routes';
+import { PATH_HOME, PATH_TREES, PATH_SETTINGS } from '@/router/routes';
+import AccountMenu from './AccountMenu';
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -54,9 +54,8 @@ export default function Header() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Family Tree App
           </Typography>
-          <IconButton color="inherit" aria-label="account" onClick={() => navigate(PATH_AUTH_LOGIN)}>
-            <Person />
-          </IconButton>
+
+          <AccountMenu />
         </Toolbar>
       </AppBar>
 

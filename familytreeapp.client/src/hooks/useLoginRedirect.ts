@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PATH_HOME } from '@/router/routes';
 
 export const useLoginRedirect = (defaultRedirect = PATH_HOME) => {
-    const isLoggedIn = useAuth();
+    const { isLoggedIn } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
