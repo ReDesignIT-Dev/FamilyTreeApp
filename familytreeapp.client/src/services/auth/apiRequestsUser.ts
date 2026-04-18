@@ -11,37 +11,14 @@ import { apiErrorHandler } from "../apiErrorHandler";
 import { AxiosError } from "axios";
 import type { AxiosResponse } from "axios";
 import { getHeaders } from "@/utils/utils";
-
-interface ReCaptchaData {
-  recaptchaToken: string | null;
-}
-
-interface UsernameData {
-  username: string;
-}
-
-interface PasswordData {
-  password: string;
-  passwordConfirm: string;
-}
-
-interface EmailData {
-  email: string;
-}
-
-interface LoginData extends ReCaptchaData, UsernameData {
-  password: string;
-}
-
-interface RegisterData extends ReCaptchaData, UsernameData, PasswordData, EmailData {}
-
-interface PasswordResetData extends ReCaptchaData, PasswordData {}
-
-interface PasswordRecoveryData extends ReCaptchaData, EmailData {}
-
-interface AuthTokenResponse {
-  token: string;
-}
+import type {
+  LoginData,
+  RegisterData,
+  PasswordResetData,
+  PasswordRecoveryData,
+  AuthTokenResponse,
+  MessageResponse,
+} from "./authTypes";
 
 type ApiResponse<T = unknown> = AxiosResponse<T>;
 
@@ -55,7 +32,7 @@ function handleApiError(error: unknown): void {
 
 async function makePostRequest<T>(
   endpoint: string,
-  data: Record<string, unknown>,
+  data: object,
   additionalHeaders?: Record<string, string>
 ): Promise<ApiResponse<T> | undefined> {
   try {
@@ -66,13 +43,6 @@ async function makePostRequest<T>(
   } catch (error: unknown) {
     handleApiError(error);
   }
-}
-
-export async function postData(
-  endpoint: string,
-  data: Record<string, unknown>
-): Promise<ApiResponse | undefined> {
-  return makePostRequest(endpoint, data);
 }
 
 export async function postLogin({
@@ -88,20 +58,15 @@ export async function postLogin({
     { Authorization: `Basic ${encodedAuthString}` }
   );
 
-  if (response?.status === 200) {
+  if (response?.data?.token) {
     setToken(response.data.token);
   }
   return response;
 }
 
-export async function registerUser(data: RegisterData): Promise<ApiResponse | undefined> {
-  return makePostRequest(API_REGISTER_USER_URL, {
-    username: data.username,
-    email: data.email,
-    password: data.password,
-    passwordConfirm: data.passwordConfirm,
-    recaptchaToken: data.recaptchaToken,
-  });
+// ✅ Pass data directly — no need to manually spread fields
+export async function registerUser(data: RegisterData): Promise<ApiResponse<MessageResponse> | undefined> {
+  return makePostRequest<MessageResponse>(API_REGISTER_USER_URL, data);
 }
 
 export async function getData(endpoint: string): Promise<ApiResponse | undefined> {
@@ -148,6 +113,7 @@ export async function validatePasswordResetToken(
   }
 }
 
+// ✅ T omitted — response body is not read in either function
 export async function postPasswordReset(
   token: string,
   data: PasswordResetData
@@ -161,19 +127,12 @@ export async function postPasswordRecovery(
   return makePostRequest(API_PASSWORD_RESET_URL, data);
 }
 
+// ✅ No redundant try/catch — makePostRequest already handles errors internally
 export async function logoutUser(): Promise<void> {
   const token = getValidatedToken();
-  try {
-    if (token) {
-      await makePostRequest(API_LOGOUT_USER_URL, {}, { Authorization: `Bearer ${token}` });
-    }
-  } catch (error: unknown) {
-    if (error instanceof AxiosError && error.response?.status === 401) {
-      return;
-    }
-    handleApiError(error);
-  } finally {
-    removeToken();
-    removeUserData();
+  if (token) {
+    await makePostRequest(API_LOGOUT_USER_URL, {}, { Authorization: `Bearer ${token}` });
   }
+  removeToken();
+  removeUserData();
 }

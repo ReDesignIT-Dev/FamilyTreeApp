@@ -18,6 +18,7 @@ export const PATH_HOME = '/';
 export const PATH_AUTH = `/${ROUTE_AUTH}`;
 export const PATH_AUTH_LOGIN = `/${ROUTE_AUTH}/${ROUTE_AUTH_LOGIN}`;
 export const PATH_AUTH_REGISTER = `/${ROUTE_AUTH}/${ROUTE_AUTH_REGISTER}`;
+export const PATH_AUTH_ACTIVATE = `/${ROUTE_AUTH}/${ROUTE_AUTH_ACTIVATE}`;  // ✅ add this
 export const PATH_TREES = `/${ROUTE_TREES}`;
 export const PATH_TREE_NEW = `/${ROUTE_TREE_NEW}`;
 export const PATH_TREE_DETAIL = (treeId: string) => `/${ROUTE_TREES}/${treeId}`;

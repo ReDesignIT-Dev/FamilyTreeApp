@@ -119,7 +119,6 @@ builder.Services.AddCors(options =>
     {
         corsBuilder
             .WithOrigins(
-                "http://localhost:52177",
                 "https://localhost:52177",
                 "http://localhost:7068",
                 "https://localhost:7068",

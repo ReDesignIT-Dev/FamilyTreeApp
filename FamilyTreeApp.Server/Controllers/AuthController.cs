@@ -15,7 +15,7 @@ using System.Security.Claims;
 namespace FamilyTreeApp.Server.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -48,6 +48,10 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<UserDto>> Register(RegisterDto dto)
     {
+        // ✅ Validate passwords BEFORE touching the DB
+        if (dto.Password != dto.PasswordConfirm)
+            return BadRequest("Passwords do not match.");
+
         if (!_env.IsDevelopment())
         {
             var recaptchaValid = await _reCaptchaService.VerifyAsync(dto.RecaptchaToken);
@@ -59,19 +63,25 @@ public class AuthController : ControllerBase
         if (userDto == null)
             return BadRequest("Username or email is already taken.");
 
-        if (dto.Password != dto.PasswordConfirm)
-            return BadRequest("Passwords do not match.");
-
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user == null)
             return StatusCode(500, "User creation failed.");
 
-        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var frontendBaseUrl = _config["Frontend:BaseUrl"];
-        var confirmationLink = $"{frontendBaseUrl}/auth/activate/{user.Id}/{WebUtility.UrlEncode(token)}";
-        var subject = "Activate Your Account";
-        var body = _emailService.GetActivationEmailBody(user.UserName ?? user.Email!, confirmationLink!);
-        await _emailService.SendAsync(user.Email!, subject, body);
+        // ✅ Rollback: delete user if email sending fails
+        try
+        {
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var frontendBaseUrl = _config["Frontend:BaseUrl"];
+            var confirmationLink = $"{frontendBaseUrl}/auth/activate/{user.Id}/{WebUtility.UrlEncode(token)}";
+            var subject = "Activate Your Account";
+            var body = _emailService.GetActivationEmailBody(user.UserName ?? user.Email!, confirmationLink);
+            await _emailService.SendAsync(user.Email!, subject, body);
+        }
+        catch (Exception ex)
+        {
+            await _userManager.DeleteAsync(user);
+            return StatusCode(500, "Registration failed: unable to send activation email. Please try again.");
+        }
 
         return Ok(new { user = userDto });
     }
@@ -82,21 +92,21 @@ public class AuthController : ControllerBase
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
-            return BadRequest("Invalid user.");
-        if (user.IsActive)
-            return BadRequest("Email already confirmed.");
-        
-        var result = await _userManager.ConfirmEmailAsync(user, token); // Use token directly
+            return NotFound("Invalid activation link.");
 
-        if (result.Succeeded)
+        if (user.IsActive)
+            return Ok("Account is already activated. You can log in.");
+
+        var result = await _userManager.ConfirmEmailAsync(user, token);
+        if (!result.Succeeded)
         {
-            user.IsActive = true;
-            await _userManager.UpdateAsync(user);
-            return Ok("Email confirmed!");
+            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            return BadRequest($"Email confirmation failed: {errors}");
         }
 
-        var errorDescriptions = string.Join("; ", result.Errors.Select(e => e.Description));
-        return BadRequest($"Email confirmation failed: {errorDescriptions}");
+        user.IsActive = true;
+        await _userManager.UpdateAsync(user);
+        return Ok("Email confirmed! Your account is now active.");
     }
 
 
