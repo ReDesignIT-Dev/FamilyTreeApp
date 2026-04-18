@@ -4,7 +4,7 @@ import HomePage from '@/pages/HomePage';
 import FamilyTreeListPage from '@/pages/FamilyTreeListPage';
 import FamilyTreeDetailPage from '@/pages/FamilyTreeDetailPage';
 import MemberDetailsPage from '@/pages/MemberDetailsPage';
-import AuthPage from '@/pages/AuthPage';
+import AuthPage from '@/pages/auth/AuthPage';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
 import Activate from '@/pages/auth/Activate';
