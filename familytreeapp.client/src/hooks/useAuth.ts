@@ -7,14 +7,14 @@ import { isTokenValid } from "@/utils/cookies";
 type UseAuthReturn = Omit<AuthState, "error" | "token">;
 
 export const useAuth = (): UseAuthReturn => {
-  const { isLoggedIn, username, isAdmin, isLoading, token } = useSelector(
-    (state: RootState) => state.auth
-  );
+    const { isLoggedIn, username, isAdmin, isLoading, token } = useSelector(
+        (state: RootState) => state.auth
+    );
 
-  return {
-    isLoggedIn: isLoggedIn && !!token && isTokenValid(),
-    username,
-    isAdmin,
-    isLoading,
-  };
+    return {
+        isLoggedIn: isLoggedIn && !!token && isTokenValid(),
+        username,
+        isAdmin,
+        isLoading,
+    };
 };

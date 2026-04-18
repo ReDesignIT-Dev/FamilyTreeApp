@@ -10,37 +10,37 @@ import Register from '@/pages/auth/Register';
 import Activate from '@/pages/auth/Activate';
 import NotFoundPage from '@/pages/NotFoundPage';
 import {
-  ROUTE_AUTH, ROUTE_AUTH_LOGIN, ROUTE_AUTH_REGISTER,
-  ROUTE_TREES, ROUTE_TREE_DETAIL, ROUTE_MEMBER_DETAIL,
-  PATH_AUTH_ACTIVATE,
+    ROUTE_AUTH, ROUTE_AUTH_LOGIN, ROUTE_AUTH_REGISTER,
+    ROUTE_TREES, ROUTE_TREE_DETAIL, ROUTE_MEMBER_DETAIL,
+    PATH_AUTH_ACTIVATE,
 } from './routes';
 
 const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <RootLayout />,
-    errorElement: <NotFoundPage />,
-    children: [
-      { index: true, element: <HomePage /> },
-      { path: ROUTE_TREES, element: <FamilyTreeListPage /> },
-      { path: ROUTE_TREE_DETAIL, element: <FamilyTreeDetailPage /> },
-      { path: ROUTE_MEMBER_DETAIL, element: <MemberDetailsPage /> },
-
-      { path: PATH_AUTH_ACTIVATE, element: <Activate /> },
-
-      {
-        path: ROUTE_AUTH,
-        element: <AuthPage />,
+    {
+        path: '/',
+        element: <RootLayout />,
+        errorElement: <NotFoundPage />,
         children: [
-          { index: true, element: <Navigate to={ROUTE_AUTH_LOGIN} replace /> },
-          { path: ROUTE_AUTH_LOGIN, element: <Login /> },
-          { path: ROUTE_AUTH_REGISTER, element: <Register /> },
+            { index: true, element: <HomePage /> },
+            { path: ROUTE_TREES, element: <FamilyTreeListPage /> },
+            { path: ROUTE_TREE_DETAIL, element: <FamilyTreeDetailPage /> },
+            { path: ROUTE_MEMBER_DETAIL, element: <MemberDetailsPage /> },
+
+            { path: PATH_AUTH_ACTIVATE, element: <Activate /> },
+
+            {
+                path: ROUTE_AUTH,
+                element: <AuthPage />,
+                children: [
+                    { index: true, element: <Navigate to={ROUTE_AUTH_LOGIN} replace /> },
+                    { path: ROUTE_AUTH_LOGIN, element: <Login /> },
+                    { path: ROUTE_AUTH_REGISTER, element: <Register /> },
+                ],
+            },
         ],
-      },
-    ],
-  },
+    },
 ]);
 
 export default function AppRouter() {
-  return <RouterProvider router={router} />;
+    return <RouterProvider router={router} />;
 }
