@@ -4,68 +4,65 @@ import { TextField, Box } from "@mui/material";
 import { FIELD_LIMITS } from "@/constants/validation";
 
 interface UsernameFieldProps {
-  value: string;
-  disabled: boolean;
-  customClasses: string;
-  onChange: (value: string) => void;
-  onValidate: (isValid: boolean) => void;
+    value: string;
+    disabled: boolean;
+    customClasses: string;
+    onChange: (value: string) => void;
+    onValidate: (isValid: boolean) => void;
+    externalError?: string;
 }
 
-const UsernameField: React.FC<UsernameFieldProps> = ({ 
-  value, 
-  disabled, 
-  customClasses, 
-  onChange, 
-  onValidate 
+const UsernameField: React.FC<UsernameFieldProps> = ({
+    value,
+    disabled,
+    customClasses,
+    onChange,
+    onValidate,
+    externalError
 }) => {
-  const [username, setUsername] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+    const [touched, setTouched] = useState<boolean>(false);
 
-  useEffect(() => {
-    setUsername(value);
-    validate(value);
-  }, [value]);
+    const isValid = username.length >= FIELD_LIMITS.USERNAME_MIN && username.length <= FIELD_LIMITS.USERNAME_MAX;
+    const showError = (touched && !isValid) || !!externalError;
+    const errorText = externalError
+        ? externalError
+        : `Username must be between ${FIELD_LIMITS.USERNAME_MIN} and ${FIELD_LIMITS.USERNAME_MAX} characters`;
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    validate(value);
-    setUsername(value);
-    onChange(value);
-  };
+    useEffect(() => {
+        setUsername(value);
+    }, [value]);
 
-  const validate = (value: string): boolean => {
-    // Use constants instead of hardcoded values
-    const isValid = value.length >= FIELD_LIMITS.USERNAME_MIN && value.length <= FIELD_LIMITS.USERNAME_MAX;
-    onValidate(isValid);
-    return isValid;
-  };
+    useEffect(() => {
+        onValidate(isValid);
+    }, [username, onValidate]);
 
-  return (
-    <Box className={`${customClasses}`}>
-      <TextField
-        label="Username"
-        type="text"
-        id="usernameField"
-        value={username}
-        onChange={handleChange}
-        placeholder="username"
-        disabled={disabled}
-        fullWidth
-        variant="outlined"
-        size="small"
-        error={username !== "" && !validate(username)}
-        helperText={
-          username !== "" && !validate(username)
-            ? `Username must be between ${FIELD_LIMITS.USERNAME_MIN} and ${FIELD_LIMITS.USERNAME_MAX} characters`
-            : ""
-        }
-        sx={{
-          '& .MuiInputBase-input': {
-            textAlign: 'center'
-          }
-        }}
-      />
-    </Box>
-  );
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setUsername(val);
+        onChange(val);
+    };
+
+    return (
+        <Box className={customClasses}>
+            <TextField
+                label="Username"
+                type="text"
+                id="usernameField"
+                value={username}
+                onChange={handleChange}
+                onBlur={() => setTouched(true)}
+                placeholder="username"
+                disabled={disabled}
+                fullWidth
+                variant="outlined"
+                size="small"
+                error={showError}
+                helperText={showError ? errorText : ""}
+                sx={{ '& .MuiInputBase-input': { textAlign: 'center' } }}
+            />
+        </Box>
+    );
 };
 
 export default UsernameField;

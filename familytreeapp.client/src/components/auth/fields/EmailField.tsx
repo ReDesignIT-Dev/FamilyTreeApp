@@ -1,49 +1,52 @@
 import { isEmailValid } from "@/utils/validation";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import { TextField, Box } from "@mui/material";
 
 interface EmailFieldProps {
-  value: string;
-  disabled: boolean;
-  onChange: (value: string) => void;
-  onValidate: (isValid: boolean) => void;
+    value: string;
+    disabled: boolean;
+    onChange: (value: string) => void;
+    onValidate: (isValid: boolean) => void;
+    externalError?: string;
 }
 
-const EmailField: React.FC<EmailFieldProps> = ({ value, disabled, onChange, onValidate }) => {
+const EmailField: React.FC<EmailFieldProps> = ({ value, disabled, onChange, onValidate, externalError }) => {
+    const [touched, setTouched] = useState<boolean>(false);
 
-  useEffect(() => {
-    onValidate(isEmailValid(value));
-  }, [value, onValidate]);
+    const valid = isEmailValid(value);
+    const showError = (touched && !valid) || !!externalError;
+    const errorText = externalError ? externalError : "Please enter a valid email address";
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
-  };
+    useEffect(() => {
+        onValidate(valid);
+    }, [value, onValidate]);
 
-  return (
-    <Box>
-      <TextField
-        label="Email"
-        type="email"
-        id="emailField"
-        value={value}
-        onChange={handleChange}
-        placeholder="email"
-        autoComplete="email"
-        disabled={disabled}
-        fullWidth
-        variant="outlined"
-        size="small"
-        error={value !== "" && !isEmailValid(value)}
-        helperText={value !== "" && !isEmailValid(value) ? "Please enter a valid email address" : ""}
-        sx={{
-          '& .MuiInputBase-input': {
-            textAlign: 'center'
-          }
-        }}
-      />
-    </Box>
-  );
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        onChange(e.target.value);
+    };
+
+    return (
+        <Box>
+            <TextField
+                label="Email"
+                type="email"
+                id="emailField"
+                value={value}
+                onChange={handleChange}
+                onBlur={() => setTouched(true)}
+                placeholder="email"
+                autoComplete="email"
+                disabled={disabled}
+                fullWidth
+                variant="outlined"
+                size="small"
+                error={showError}
+                helperText={showError ? errorText : ""}
+                sx={{ '& .MuiInputBase-input': { textAlign: 'center' } }}
+            />
+        </Box>
+    );
 };
 
 export default EmailField;

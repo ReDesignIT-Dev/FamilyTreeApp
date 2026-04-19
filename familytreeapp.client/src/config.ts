@@ -33,3 +33,14 @@ export const DEFAULT_IMAGE = '/images/default-image.png';
 // ── Auth Tokens ───────────────────────────────────────────────────────────────
 export const AUTH_TOKEN_COOKIE = "familytreeapp-jwt";
 export const AUTH_IS_ADMIN_COOKIE = "familytreeapp-isAdmin";
+
+// ── Password Rules ────────────────────────────────────────────────────────────
+export const PASSWORD_RULES = {
+    minLength: 12,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireDigit: true,
+    requireSpecialChar: true,
+} as const;
+
+export type PasswordRules = typeof PASSWORD_RULES;
