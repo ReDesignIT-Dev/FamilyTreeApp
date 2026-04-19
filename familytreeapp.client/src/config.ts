@@ -29,3 +29,7 @@ export const FRONTEND_ADMIN_PANEL_URL = `${FRONTEND_BASE_URL}${ADMIN_PANEL_URL}`
 
 // ── Misc ──────────────────────────────────────────────────────────────────────
 export const DEFAULT_IMAGE = '/images/default-image.png';
+
+// ── Auth Tokens ───────────────────────────────────────────────────────────────
+export const AUTH_TOKEN_COOKIE = "familytreeapp-jwt";
+export const AUTH_IS_ADMIN_COOKIE = "familytreeapp-isAdmin";

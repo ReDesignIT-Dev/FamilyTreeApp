@@ -1,4 +1,5 @@
 import type { JwtPayload } from "@/types/jwt";
+import { AUTH_TOKEN_COOKIE, AUTH_IS_ADMIN_COOKIE } from "@/config";
 
 function _setCookie(name: string, value: string, expires?: Date): void {
     let cookieStr = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/; SameSite=Lax`;
@@ -18,9 +19,7 @@ function _removeCookie(name: string): void {
 }
 
 export const getToken = (): string | null => {
-    const token = _getCookie("token");
-    if (!token) return null;
-    return token;
+    return _getCookie(AUTH_TOKEN_COOKIE) ?? null;
 };
 
 export const getValidatedToken = (): string | null => {
@@ -34,7 +33,7 @@ export const getValidatedToken = (): string | null => {
 };
 
 export const removeToken = (): void => {
-    _removeCookie("token");
+    _removeCookie(AUTH_TOKEN_COOKIE);
 };
 
 export const setToken = (token: string): void => {
@@ -42,7 +41,7 @@ export const setToken = (token: string): void => {
     if (!expiryDate || isNaN(expiryDate.getTime())) {
         throw new Error("Invalid token: missing or malformed expiry date");
     }
-    _setCookie("token", token, expiryDate);
+    _setCookie(AUTH_TOKEN_COOKIE, token, expiryDate);
 };
 
 export const isUserAdmin = (): boolean => {
@@ -52,11 +51,11 @@ export const isUserAdmin = (): boolean => {
 };
 
 export const setIsUserAdmin = (isUserAdmin: boolean): void => {
-    _setCookie("isAdmin", isUserAdmin.toString());
+    _setCookie(AUTH_IS_ADMIN_COOKIE, isUserAdmin.toString());
 };
 
 export const removeUserData = (): void => {
-    _removeCookie("isAdmin");
+    _removeCookie(AUTH_IS_ADMIN_COOKIE);
 };
 
 // ✅ Single source of truth — read expiry from the JWT itself, not a separate cookie
