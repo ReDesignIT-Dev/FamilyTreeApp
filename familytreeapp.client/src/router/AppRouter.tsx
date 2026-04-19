@@ -5,8 +5,8 @@ import FamilyTreeListPage from '@/pages/FamilyTreeListPage';
 import FamilyTreeDetailPage from '@/pages/FamilyTreeDetailPage';
 import MemberDetailsPage from '@/pages/MemberDetailsPage';
 import AuthPage from '@/pages/auth/AuthPage';
-import Login from '@/pages/auth/Login';
-import Register from '@/pages/auth/Register';
+import LoginFormComponent from '@/components/auth/LoginFormComponent';
+import RegisterFormComponent from '@/components/auth/RegisterFormComponent';
 import Activate from '@/pages/auth/Activate';
 import NotFoundPage from '@/pages/NotFoundPage';
 import {
@@ -33,8 +33,8 @@ const router = createBrowserRouter([
                 element: <AuthPage />,
                 children: [
                     { index: true, element: <Navigate to={ROUTE_AUTH_LOGIN} replace /> },
-                    { path: ROUTE_AUTH_LOGIN, element: <Login /> },
-                    { path: ROUTE_AUTH_REGISTER, element: <Register /> },
+                    { path: ROUTE_AUTH_LOGIN, element: <LoginFormComponent /> },
+                    { path: ROUTE_AUTH_REGISTER, element: <RegisterFormComponent /> },
                 ],
             },
         ],

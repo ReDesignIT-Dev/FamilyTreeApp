@@ -11,7 +11,7 @@ export default function AuthPage() {
             <Typography variant="h4" gutterBottom>
                 Welcome
             </Typography>
-            <Tabs value={tab} onChange={(_, v) => navigate(v === 0 ? 'login' : 'register')}>
+            <Tabs value={tab} onChange={(_, v) => navigate(v === 0 ? 'login' : 'register', { replace: true })}>
                 <Tab label="Login" />
                 <Tab label="Register" />
             </Tabs>
