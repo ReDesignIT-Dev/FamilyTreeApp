@@ -4,7 +4,7 @@ export const ROUTE_AUTH_LOGIN = 'login';
 export const ROUTE_AUTH_REGISTER = 'register';
 export const ROUTE_AUTH_ACTIVATE = 'activate/:userId/:token';
 export const ROUTE_AUTH_PASSWORD_RECOVERY = 'password-recovery';
-export const ROUTE_AUTH_PASSWORD_RESET = 'password-reset/:token';
+export const ROUTE_AUTH_PASSWORD_RESET = 'password-reset/:userId';
 
 // App
 export const ROUTE_TREES = 'trees';
@@ -18,7 +18,9 @@ export const PATH_HOME = '/';
 export const PATH_AUTH = `/${ROUTE_AUTH}`;
 export const PATH_AUTH_LOGIN = `/${ROUTE_AUTH}/${ROUTE_AUTH_LOGIN}`;
 export const PATH_AUTH_REGISTER = `/${ROUTE_AUTH}/${ROUTE_AUTH_REGISTER}`;
-export const PATH_AUTH_ACTIVATE = `/${ROUTE_AUTH}/${ROUTE_AUTH_ACTIVATE}`;  // ✅ add this
+export const PATH_AUTH_ACTIVATE = `/${ROUTE_AUTH}/${ROUTE_AUTH_ACTIVATE}`;
+export const PATH_AUTH_PASSWORD_RECOVERY = `/${ROUTE_AUTH}/${ROUTE_AUTH_PASSWORD_RECOVERY}`;
+export const PATH_AUTH_PASSWORD_RESET = `/${ROUTE_AUTH}/password-reset`;
 export const PATH_TREES = `/${ROUTE_TREES}`;
 export const PATH_TREE_NEW = `/${ROUTE_TREE_NEW}`;
 export const PATH_TREE_DETAIL = (treeId: string) => `/${ROUTE_TREES}/${treeId}`;

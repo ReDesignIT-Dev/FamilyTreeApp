@@ -7,10 +7,13 @@ import MemberDetailsPage from '@/pages/MemberDetailsPage';
 import AuthPage from '@/pages/auth/AuthPage';
 import LoginFormComponent from '@/components/auth/LoginFormComponent';
 import RegisterFormComponent from '@/components/auth/RegisterFormComponent';
+import ForgotPasswordFormComponent from '@/components/auth/ForgotPasswordFormComponent';
+import ResetPasswordFormComponent from '@/components/auth/ResetPasswordFormComponent';
 import Activate from '@/pages/auth/Activate';
 import NotFoundPage from '@/pages/NotFoundPage';
 import {
     ROUTE_AUTH, ROUTE_AUTH_LOGIN, ROUTE_AUTH_REGISTER,
+    ROUTE_AUTH_PASSWORD_RECOVERY, ROUTE_AUTH_PASSWORD_RESET,
     ROUTE_TREES, ROUTE_TREE_DETAIL, ROUTE_MEMBER_DETAIL,
     PATH_AUTH_ACTIVATE,
 } from './routes';
@@ -35,6 +38,8 @@ const router = createBrowserRouter([
                     { index: true, element: <Navigate to={ROUTE_AUTH_LOGIN} replace /> },
                     { path: ROUTE_AUTH_LOGIN, element: <LoginFormComponent /> },
                     { path: ROUTE_AUTH_REGISTER, element: <RegisterFormComponent /> },
+                    { path: ROUTE_AUTH_PASSWORD_RECOVERY, element: <ForgotPasswordFormComponent /> },
+                    { path: ROUTE_AUTH_PASSWORD_RESET, element: <ResetPasswordFormComponent /> },
                 ],
             },
         ],

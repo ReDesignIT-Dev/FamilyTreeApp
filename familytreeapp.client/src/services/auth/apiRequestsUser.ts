@@ -101,24 +101,28 @@ export async function activateUser(
 }
 
 export async function validatePasswordResetToken(
+  userId: string,
   token: string
 ): Promise<ApiResponse | undefined> {
   try {
-    const response = await apiClient.get(`${API_PASSWORD_RESET_URL}/${token}`, {
-      headers: getHeaders(),
-    });
+    const response = await apiClient.get(
+      `${API_PASSWORD_RESET_URL}/${userId}?token=${encodeURIComponent(token)}`
+    );
     return response;
   } catch (error: unknown) {
     handleApiError(error);
   }
 }
 
-// ✅ T omitted — response body is not read in either function
 export async function postPasswordReset(
+  userId: string,
   token: string,
   data: PasswordResetData
 ): Promise<ApiResponse | undefined> {
-  return makePostRequest(`${API_PASSWORD_RESET_URL}/${token}`, data);
+  return makePostRequest(
+    `${API_PASSWORD_RESET_URL}/${userId}?token=${encodeURIComponent(token)}`,
+    data
+  );
 }
 
 export async function postPasswordRecovery(

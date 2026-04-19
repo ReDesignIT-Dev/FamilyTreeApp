@@ -5,10 +5,12 @@ import Loading from "@/components/common/Loading";
 import { useLoginRedirect } from '@/hooks/useLoginRedirect';
 import { loginUser } from "@/reduxComponents/reduxUser/Auth/authReducer";
 import type { AppDispatch, RootState } from "@/reduxComponents/store";
-import { Alert, Box, Button, Paper, Typography } from "@mui/material";
+import { Alert, Box, Button, Link, Paper, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link as RouterLink } from "react-router-dom";
 import type { FormEvent } from "react";
+import { PATH_AUTH_PASSWORD_RECOVERY } from "@/router/routes";
 
 const LoginFormComponent: React.FC = () => {
     const [isValid, setIsValid] = useState<boolean>(false);
@@ -29,6 +31,18 @@ const LoginFormComponent: React.FC = () => {
         setIsValid(valid);
     }, [isEmailValid, isValidReCaptchaToken, isPasswordValid]);
 
+    useEffect(() => {
+        if (isLoggedIn) {
+            setEmail("");
+            setPassword("");
+            setReCaptchaToken(null);
+            setIsEmailValid(false);
+            setIsPasswordValid(false);
+            setIsValidRecaptchaToken(false);
+            setIsValid(false);
+        }
+    }, [isLoggedIn]);
+
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
         if (isValid) {
@@ -43,10 +57,7 @@ const LoginFormComponent: React.FC = () => {
             ) : isLoggedIn ? (
                 <Alert severity="success">Login successful! Redirecting...</Alert>
             ) : (
-                <Paper
-                    elevation={3}
-                    sx={{ p: 4, width: "100%", maxWidth: 400 }}
-                >
+                <Paper elevation={3} sx={{ p: 4, width: "100%", maxWidth: 400 }}>
                     <Typography variant="h5" align="center" gutterBottom>
                         Sign In
                     </Typography>
@@ -79,14 +90,12 @@ const LoginFormComponent: React.FC = () => {
                             setReturnToken={setReCaptchaToken}
                             customClasses="w-100"
                         />
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            fullWidth
-                            disabled={!isValid}
-                        >
+                        <Button type="submit" variant="contained" fullWidth disabled={!isValid}>
                             Submit
                         </Button>
+                        <Link component={RouterLink} to={PATH_AUTH_PASSWORD_RECOVERY} variant="body2">
+                            Forgot your password?
+                        </Link>
                         {error && <Alert severity="warning" sx={{ width: "100%" }}>{error}</Alert>}
                     </Box>
                 </Paper>

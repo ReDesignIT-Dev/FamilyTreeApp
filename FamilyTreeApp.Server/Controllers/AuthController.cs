@@ -15,7 +15,7 @@ using System.Security.Claims;
 namespace FamilyTreeApp.Server.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -25,7 +25,7 @@ public class AuthController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly FamilyTreeContext _dbContext;
     private readonly IConfiguration _config;
-    
+
     public AuthController(
         IUserService userService,
         RecaptchaService reCaptchaService,
@@ -100,7 +100,7 @@ public class AuthController : ControllerBase
         var result = await _userManager.ConfirmEmailAsync(user, token);
         if (!result.Succeeded)
         {
-            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
             return BadRequest($"Email confirmation failed: {errors}");
         }
 
@@ -229,6 +229,63 @@ public class AuthController : ControllerBase
     {
         var users = await _userService.GetAllUsersWithRolesAsync();
         return Ok(users);
+    }
+
+    [HttpPost("password-reset")]
+    public async Task<IActionResult> RequestPasswordReset([FromBody] PasswordRecoveryDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        // Always return OK to prevent email enumeration
+        if (user == null) return Ok();
+
+        if (!_env.IsDevelopment())
+        {
+            var recaptchaValid = await _reCaptchaService.VerifyAsync(dto.RecaptchaToken ?? "");
+            if (!recaptchaValid) return BadRequest("reCAPTCHA validation failed.");
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var frontendBaseUrl = _config["Frontend:BaseUrl"];
+        var resetLink = $"{frontendBaseUrl}/auth/password-reset/{user.Id}?token={Uri.EscapeDataString(token)}";
+        var subject = "Reset Your Password";
+        var body = $"<p>Click the link below to reset your password:</p><p><a href='{resetLink}'>{resetLink}</a></p><p>This link expires in 1 hour.</p>";
+        await _emailService.SendAsync(user.Email!, subject, body);
+
+        return Ok();
+    }
+
+    [HttpGet("password-reset/{userId}")]
+    public async Task<IActionResult> ValidatePasswordResetToken(int userId, [FromQuery] string token)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) return BadRequest("Invalid reset link.");
+
+        var isValid = await _userManager.VerifyUserTokenAsync(
+            user,
+            _userManager.Options.Tokens.PasswordResetTokenProvider,
+            UserManager<User>.ResetPasswordTokenPurpose,
+            token
+        );
+
+        if (!isValid) return BadRequest("Reset link is invalid or has expired.");
+
+        return Ok();
+    }
+
+    [HttpPost("password-reset/{userId}")]
+    public async Task<IActionResult> ResetPassword(int userId, [FromQuery] string token, [FromBody] PasswordResetDto dto)
+    {
+        if (dto.Password != dto.PasswordConfirm)
+            return BadRequest("Passwords do not match.");
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) return BadRequest("Invalid reset link.");
+
+        var result = await _userManager.ResetPasswordAsync(user, token, dto.Password);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors.FirstOrDefault()?.Description ?? "Reset failed.");
+
+        return Ok("Password has been reset successfully.");
     }
 
 }

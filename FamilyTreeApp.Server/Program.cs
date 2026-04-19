@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Scalar.AspNetCore;
 using System.Text;
 
 DotNetEnv.Env.Load();
@@ -29,7 +30,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<FamilyTreeContext>();
@@ -43,7 +44,7 @@ builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IAuthorizationHandler, AdminHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, ActiveUserHandler>();
 builder.Services.AddScoped<IHtmlSanitizerService, HtmlSanitizerService>();
-builder.Services.AddScoped<IMediaService, MediaService>(); 
+builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IFamilyMemberService, FamilyMemberService>();
 builder.Services.AddScoped<IFamilyTreeService, FamilyTreeService>();
 builder.Services.AddScoped<IPersonFactory, PersonFactory>();
@@ -180,6 +181,7 @@ if (builder.Environment.IsProduction())
 
 var app = builder.Build();
 app.UseCors();
+app.UseHttpsRedirection();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -229,10 +231,9 @@ using (var scope = app.Services.CreateScope())
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
-app.UseHttpsRedirection();
 
 app.UseStaticFiles(new StaticFileOptions
 {

@@ -58,9 +58,8 @@ export const removeUserData = (): void => {
     _removeCookie(AUTH_IS_ADMIN_COOKIE);
 };
 
-// ✅ Single source of truth — read expiry from the JWT itself, not a separate cookie
 export const isTokenValid = (): boolean => {
-    const token = _getCookie("token");
+    const token = _getCookie(AUTH_TOKEN_COOKIE);
     if (!token) return false;
 
     const expiry = getJwtExpiry(token);
