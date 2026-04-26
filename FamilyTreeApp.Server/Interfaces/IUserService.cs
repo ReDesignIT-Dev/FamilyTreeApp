@@ -8,5 +8,5 @@ public interface IUserService
     Task<UserDto?> LoginAsync(LoginDto dto);
     Task<bool> UserExistsAsync(string username);
     Task<List<AdminUserDto>> GetAllUsersWithRolesAsync();
-
+    Task<UserDto?> RefreshTokenAsync(string refreshToken);
 }

@@ -175,6 +175,10 @@ public class AuthController : ControllerBase
 
         if (userDto == null)
             return Unauthorized("Invalid email or password.");
+
+        SetRefreshTokenCookie(userDto.RefreshToken!);
+        userDto.RefreshToken = null; // don't expose in body
+
         return Ok(userDto);
     }
 
@@ -187,13 +191,9 @@ public class AuthController : ControllerBase
         var sessionIdClaim = User.FindFirst(JwtRegisteredClaimNames.Jti);
 
         if (userIdClaim == null)
-        {
             return BadRequest("User ID not found in token.");
-        }
         if (sessionIdClaim == null)
-        {
             return BadRequest("Session ID not found in token.");
-        }
 
         var userId = int.Parse(userIdClaim.Value);
         var sessionId = sessionIdClaim.Value;
@@ -207,6 +207,9 @@ public class AuthController : ControllerBase
             await _dbContext.SaveChangesAsync();
         }
 
+        // Clear the refresh token HttpOnly cookie
+        Response.Cookies.Delete("refreshToken");
+
         return Ok("Logged out from current session.");
     }
 
@@ -219,6 +222,9 @@ public class AuthController : ControllerBase
         var sessions = _dbContext.UserSessions.Where(s => s.UserId == userId);
         _dbContext.UserSessions.RemoveRange(sessions);
         await _dbContext.SaveChangesAsync();
+
+        // Clear the refresh token HttpOnly cookie
+        Response.Cookies.Delete("refreshToken");
 
         return Ok("Logged out from all sessions.");
     }
@@ -288,4 +294,31 @@ public class AuthController : ControllerBase
         return Ok("Password has been reset successfully.");
     }
 
+    [HttpPost("refresh")]
+    public async Task<ActionResult<UserDto>> Refresh()
+    {
+        var refreshToken = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(refreshToken))
+            return Unauthorized("No refresh token provided.");
+
+        var userDto = await _userService.RefreshTokenAsync(refreshToken);
+        if (userDto == null)
+            return Unauthorized("Invalid or expired refresh token.");
+
+        SetRefreshTokenCookie(userDto.RefreshToken!);
+        userDto.RefreshToken = null; // don't expose in body
+
+        return Ok(userDto);
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(7)
+        });
+    }
 }

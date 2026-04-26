@@ -12,6 +12,7 @@ export const API_LOGOUT_USER_URL = `${BACKEND_AUTH_URL}/logout`;
 export const API_REGISTER_USER_URL = `${BACKEND_AUTH_URL}/register`;
 export const API_ACTIVATE_USER_URL = `${BACKEND_AUTH_URL}/confirm-email`;
 export const API_PASSWORD_RESET_URL = `${BACKEND_AUTH_URL}/password-reset`;
+export const API_REFRESH_TOKEN_URL = `${BACKEND_AUTH_URL}/refresh`;
 
 // ── External-facing frontend URLs (used in backend-sent emails, OAuth, etc.) ─
 // These are absolute URLs — NOT for internal navigation.

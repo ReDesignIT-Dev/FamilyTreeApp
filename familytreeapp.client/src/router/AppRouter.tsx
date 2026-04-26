@@ -11,11 +11,12 @@ import ForgotPasswordFormComponent from '@/components/auth/ForgotPasswordFormCom
 import ResetPasswordFormComponent from '@/components/auth/ResetPasswordFormComponent';
 import Activate from '@/pages/auth/Activate';
 import NotFoundPage from '@/pages/NotFoundPage';
+import CreateTreePage from '@/pages/CreateTreePage';
 import {
     ROUTE_AUTH, ROUTE_AUTH_LOGIN, ROUTE_AUTH_REGISTER,
     ROUTE_AUTH_PASSWORD_RECOVERY, ROUTE_AUTH_PASSWORD_RESET,
     ROUTE_TREES, ROUTE_TREE_DETAIL, ROUTE_MEMBER_DETAIL,
-    PATH_AUTH_ACTIVATE,
+    ROUTE_TREE_NEW, PATH_AUTH_ACTIVATE,
 } from './routes';
 
 const router = createBrowserRouter([
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <HomePage /> },
             { path: ROUTE_TREES, element: <FamilyTreeListPage /> },
+            { path: ROUTE_TREE_NEW, element: <CreateTreePage /> },
             { path: ROUTE_TREE_DETAIL, element: <FamilyTreeDetailPage /> },
             { path: ROUTE_MEMBER_DETAIL, element: <MemberDetailsPage /> },
 

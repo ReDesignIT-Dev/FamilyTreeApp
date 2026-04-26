@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.User;
 using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
+using System.Security.Cryptography;
 
 namespace FamilyTreeApp.Server.Services;
 
@@ -54,52 +56,91 @@ public class UserService : IUserService
 
     public async Task<UserDto?> LoginAsync(LoginDto dto)
     {
-        // Add null checks for email and password
         if (string.IsNullOrEmpty(dto.Email) || string.IsNullOrEmpty(dto.Password))
             return null;
 
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
-            return null;
+        if (user == null) return null;
 
-        // Check if email is confirmed and account is active
-        if (!user.EmailConfirmed || !user.IsActive)
-            return null;
+        if (!user.EmailConfirmed || !user.IsActive) return null;
 
         var result = await _signInManager.PasswordSignInAsync(user, dto.Password, isPersistent: false, lockoutOnFailure: true);
-        if (!result.Succeeded)
-            return null;
+        if (!result.Succeeded) return null;
 
         var sessionId = Guid.NewGuid().ToString();
+        var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         var expiresAt = DateTime.UtcNow.AddDays(7);
 
         _dbContext.UserSessions.Add(new UserSession
         {
             UserId = user.Id,
             SessionId = sessionId,
+            RefreshToken = refreshToken,
             CreatedAt = DateTime.UtcNow,
-            ExpiresAt = expiresAt
+            ExpiresAt = expiresAt,
+            IsRevoked = false
         });
         await _dbContext.SaveChangesAsync();
-        var roles = await _userRoleService.GetUserRolesAsync(user.Id);
 
-        var token = _tokenService.CreateToken(user, sessionId, expiresAt, roles);
+        var roles = await _userRoleService.GetUserRolesAsync(user.Id);
+        var token = _tokenService.CreateToken(user, sessionId, DateTime.UtcNow.AddMinutes(15), roles);
+
         return new UserDto
         {
             Id = user.Id,
             Username = user.UserName ?? string.Empty,
-            Token = token
+            Token = token,
+            RefreshToken = refreshToken
         };
     }
 
+    public async Task<UserDto?> RefreshTokenAsync(string refreshToken)
+    {
+        var session = await _dbContext.UserSessions
+            .FirstOrDefaultAsync(s => s.RefreshToken == refreshToken && !s.IsRevoked && s.ExpiresAt > DateTime.UtcNow);
 
+        if (session == null) return null;
+
+        var user = await _userManager.FindByIdAsync(session.UserId.ToString());
+        if (user == null || !user.IsActive) return null;
+
+        // Rotate refresh token
+        session.IsRevoked = true;
+
+        var newSessionId = Guid.NewGuid().ToString();
+        var newRefreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var newExpiresAt = DateTime.UtcNow.AddDays(7);
+
+        _dbContext.UserSessions.Add(new UserSession
+        {
+            UserId = user.Id,
+            SessionId = newSessionId,
+            RefreshToken = newRefreshToken,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = newExpiresAt,
+            IsRevoked = false
+        });
+
+        await _dbContext.SaveChangesAsync();
+
+        var roles = await _userRoleService.GetUserRolesAsync(user.Id);
+        var newToken = _tokenService.CreateToken(user, newSessionId, DateTime.UtcNow.AddMinutes(15), roles);
+
+        return new UserDto
+        {
+            Id = user.Id,
+            Username = user.UserName ?? string.Empty,
+            Token = newToken,
+            RefreshToken = newRefreshToken
+        };
+    }
 
     public async Task<bool> UserExistsAsync(string email)
     {
         return await _userManager.FindByEmailAsync(email) != null;
     }
 
-        public async Task<List<AdminUserDto>> GetAllUsersWithRolesAsync()
+    public async Task<List<AdminUserDto>> GetAllUsersWithRolesAsync()
     {
         var users = _userManager.Users.ToList();
         var result = new List<AdminUserDto>();

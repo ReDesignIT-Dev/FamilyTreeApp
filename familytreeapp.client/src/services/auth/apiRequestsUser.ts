@@ -131,12 +131,12 @@ export async function postPasswordRecovery(
   return makePostRequest(API_PASSWORD_RESET_URL, data);
 }
 
-// ✅ No redundant try/catch — makePostRequest already handles errors internally
 export async function logoutUser(): Promise<void> {
-  const token = getValidatedToken();
-  if (token) {
-    await makePostRequest(API_LOGOUT_USER_URL, {}, { Authorization: `Bearer ${token}` });
+  try {
+    await apiClient.post(API_LOGOUT_USER_URL);
+  } catch {
+  } finally {
+    removeToken();
+    removeUserData();
   }
-  removeToken();
-  removeUserData();
 }

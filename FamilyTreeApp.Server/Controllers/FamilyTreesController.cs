@@ -23,7 +23,6 @@ public class FamilyTreesController : ControllerBase
         _logger = logger;
     }
 
-    // POST /api/familytrees - Create new tree
     [HttpPost]
     public async Task<ActionResult<FamilyTreeDto>> CreateTree([FromBody] CreateTreeDto dto)
     {
@@ -39,7 +38,6 @@ public class FamilyTreesController : ControllerBase
         return CreatedAtAction(nameof(GetTreeById), new { id = tree!.Id }, tree);
     }
 
-    // GET /api/familytrees - Get user's trees
     [HttpGet]
     public async Task<ActionResult<List<TreeSummaryDto>>> GetUserTrees()
     {
@@ -55,7 +53,6 @@ public class FamilyTreesController : ControllerBase
         return Ok(trees);
     }
 
-    // GET /api/familytrees/{id} - Get tree details
     [HttpGet("{id}")]
     public async Task<ActionResult<FamilyTreeDto>> GetTreeById(int id)
     {
@@ -76,7 +73,6 @@ public class FamilyTreesController : ControllerBase
         return Ok(tree);
     }
 
-    // PUT /api/familytrees/{id} - Update tree
     [HttpPut("{id}")]
     public async Task<ActionResult<FamilyTreeDto>> UpdateTree(int id, [FromBody] UpdateTreeDto dto)
     {
@@ -97,7 +93,6 @@ public class FamilyTreesController : ControllerBase
         return Ok(tree);
     }
 
-    // DELETE /api/familytrees/{id} - Delete tree
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTree(int id)
     {
@@ -118,7 +113,6 @@ public class FamilyTreesController : ControllerBase
         return NoContent();
     }
 
-    // POST /api/familytrees/{id}/share - Share with user
     [HttpPost("{id}/share")]
     public async Task<ActionResult<CollaboratorDto>> ShareTree(int id, [FromBody] ShareTreeDto dto)
     {
@@ -140,7 +134,6 @@ public class FamilyTreesController : ControllerBase
         return Ok(collaborator);
     }
 
-    // GET /api/familytrees/{id}/collaborators - Get tree collaborators
     [HttpGet("{id}/collaborators")]
     public async Task<ActionResult<List<CollaboratorDto>>> GetCollaborators(int id)
     {
@@ -161,7 +154,6 @@ public class FamilyTreesController : ControllerBase
         return Ok(collaborators);
     }
 
-    // DELETE /api/familytrees/{id}/collaborators/{collaboratorId} - Remove collaborator
     [HttpDelete("{id}/collaborators/{collaboratorId}")]
     public async Task<IActionResult> RemoveCollaborator(int id, int collaboratorId)
     {
@@ -183,7 +175,6 @@ public class FamilyTreesController : ControllerBase
         return NoContent();
     }
 
-    // Helper method
     private int? GetUserId()
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -80,6 +80,7 @@ public class FamilyTreeService : IFamilyTreeService
         // ✅ AsNoTracking — read-only query
         var tree = await _context.FamilyTrees
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(t => t.Owner)
             .Include(t => t.Members)
             .Include(t => t.Collaborators)
