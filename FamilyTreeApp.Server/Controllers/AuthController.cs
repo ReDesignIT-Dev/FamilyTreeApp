@@ -9,7 +9,6 @@ using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
 using FamilyTreeApp.Server.Services;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Security.Claims;
 
 namespace FamilyTreeApp.Server.Controllers;
@@ -21,20 +20,23 @@ public class AuthController : ControllerBase
     private readonly IUserService _userService;
     private readonly RecaptchaService _reCaptchaService;
     private readonly UserManager<User> _userManager;
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
     private readonly IWebHostEnvironment _env;
     private readonly FamilyTreeContext _dbContext;
     private readonly IConfiguration _config;
+    private readonly IRegistrationService _registrationService;
 
     public AuthController(
         IUserService userService,
+        IFamilyTreeService familyTreeService,
         RecaptchaService reCaptchaService,
         UserManager<User> userManager,
-        EmailService emailService,
+        IEmailService emailService,
         IWebHostEnvironment env,
         FamilyTreeContext dbContext,
         IConfiguration config,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        IRegistrationService registrationService)
     {
         _userService = userService;
         _reCaptchaService = reCaptchaService;
@@ -43,12 +45,12 @@ public class AuthController : ControllerBase
         _env = env;
         _dbContext = dbContext;
         _config = config;
+        _registrationService = registrationService;
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<UserDto>> Register(RegisterDto dto)
+    public async Task<IActionResult> Register(RegisterDto dto)
     {
-        // ✅ Validate passwords BEFORE touching the DB
         if (dto.Password != dto.PasswordConfirm)
             return BadRequest("Passwords do not match.");
 
@@ -59,31 +61,11 @@ public class AuthController : ControllerBase
                 return BadRequest("reCAPTCHA validation failed.");
         }
 
-        var userDto = await _userService.RegisterAsync(dto);
-        if (userDto == null)
-            return BadRequest("Username or email is already taken.");
+        var (success, error) = await _registrationService.RegisterAsync(dto);
+        if (!success)
+            return BadRequest(error);
 
-        var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
-            return StatusCode(500, "User creation failed.");
-
-        // ✅ Rollback: delete user if email sending fails
-        try
-        {
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var frontendBaseUrl = _config["Frontend:BaseUrl"];
-            var confirmationLink = $"{frontendBaseUrl}/auth/activate/{user.Id}/{WebUtility.UrlEncode(token)}";
-            var subject = "Activate Your Account";
-            var body = _emailService.GetActivationEmailBody(user.UserName ?? user.Email!, confirmationLink);
-            await _emailService.SendAsync(user.Email!, subject, body);
-        }
-        catch (Exception ex)
-        {
-            await _userManager.DeleteAsync(user);
-            return StatusCode(500, "Registration failed: unable to send activation email. Please try again.");
-        }
-
-        return Ok(new { user = userDto });
+        return Ok("Registration successful. Please check your email to activate your account.");
     }
 
 

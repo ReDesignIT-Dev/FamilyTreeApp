@@ -7,6 +7,7 @@ namespace FamilyTreeApp.Server.Interfaces;
 public interface IFamilyTreeService
 {
     Task<(bool Success, FamilyTreeDto? Tree, string? Error)> CreateTreeAsync(int userId, CreateTreeDto dto);
+    Task CreateDefaultTreeAsync(int userId, string username);
     Task<(bool Success, List<TreeSummaryDto>? Trees, string? Error)> GetUserTreesAsync(int userId);
     Task<(bool Success, FamilyTreeDto? Tree, string? Error)> GetTreeByIdAsync(int treeId, int userId);
     Task<(bool Success, FamilyTreeDto? Tree, string? Error)> UpdateTreeAsync(int treeId, int userId, UpdateTreeDto dto);

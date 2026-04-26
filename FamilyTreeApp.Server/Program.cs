@@ -36,9 +36,10 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<FamilyTreeContext>();
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddHttpClient(); // For RecaptchaService
 builder.Services.AddScoped<RecaptchaService>();
-builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IAuthorizationHandler, AdminHandler>();

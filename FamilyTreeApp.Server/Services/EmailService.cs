@@ -1,9 +1,10 @@
-﻿using System.Net;
+﻿using FamilyTreeApp.Server.Interfaces;
+using System.Net;
 using System.Net.Mail;
 
 namespace FamilyTreeApp.Server.Services
 {
-    public class EmailService
+    public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
         private readonly string _templatePath;

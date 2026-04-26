@@ -261,6 +261,20 @@ public class FamilyTreeService : IFamilyTreeService
         return (true, null);
     }
 
+    public async Task CreateDefaultTreeAsync(int userId, string username)
+    {
+        _context.FamilyTrees.Add(new FamilyTree
+        {
+            Name = $"{username}'s Family Tree",
+            OwnerId = userId,
+            IsPublic = false,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Default family tree created for user {UserId}", userId);
+    }
+
     // Helper methods
     private async Task<bool> HasAccessToTree(FamilyTree tree, int userId)
     {
