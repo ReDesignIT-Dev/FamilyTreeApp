@@ -135,7 +135,7 @@ export default function FamilyTreeDetailPage() {
             {tree.description || 'No description provided'}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Created: {new Date(tree.createdDate).toLocaleDateString()}
+            Created: {new Date(tree.createdAt).toLocaleDateString()}
           </Typography>
         </CardContent>
       </Card>
