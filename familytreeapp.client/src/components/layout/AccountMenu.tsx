@@ -13,14 +13,13 @@ import {
     Typography,
 } from '@mui/material';
 import {
-    LockOutlined,
     Logout,
     PersonOutlined,
     SettingsOutlined,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '@/reduxComponents/hooks';
 import { logout } from '@/reduxComponents/reduxUser/Auth/authReducer';
-import { PATH_AUTH_LOGIN, PATH_SETTINGS, PATH_SETTINGS_CHANGE_PASSWORD, PATH_SETTINGS_PROFILE } from '@/router/routes';
+import { PATH_AUTH_LOGIN, PATH_SETTINGS } from '@/router/routes';
 
 export default function AccountMenu() {
     const navigate = useNavigate();
@@ -129,20 +128,6 @@ export default function AccountMenu() {
                 </Box>
 
                 <Divider />
-
-                <MenuItem onClick={() => handleNavigate(PATH_SETTINGS_CHANGE_PASSWORD)}>
-                    <ListItemIcon>
-                        <LockOutlined fontSize="small" />
-                    </ListItemIcon>
-                    Change Password
-                </MenuItem>
-
-                <MenuItem onClick={() => handleNavigate(PATH_SETTINGS_PROFILE)}>
-                    <ListItemIcon>
-                        <PersonOutlined fontSize="small" />
-                    </ListItemIcon>
-                    Profile
-                </MenuItem>
 
                 <MenuItem onClick={() => handleNavigate(PATH_SETTINGS)}>
                     <ListItemIcon>
