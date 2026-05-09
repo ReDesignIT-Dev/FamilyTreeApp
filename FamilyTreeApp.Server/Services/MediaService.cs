@@ -60,22 +60,6 @@ public class MediaService : IMediaService
             return null;
         }
 
-        if (!await CanEditTree(tree, userId))
-        {
-            _logger.LogWarning("User {UserId} does not have edit access to tree {TreeId}", userId, treeId);
-            return null;
-        }
-
-        // Verify person is in this tree
-        var treeMember = await _context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
-
-        if (treeMember == null)
-        {
-            _logger.LogWarning("Person {PersonId} not found in tree {TreeId}", personId, treeId);
-            return null;
-        }
-
         var person = await _context.People.FindAsync(personId);
         if (person == null)
         {
@@ -177,22 +161,6 @@ public class MediaService : IMediaService
             return new List<MediaDto>();
         }
 
-        if (!await HasAccessToTree(tree, userId))
-        {
-            _logger.LogWarning("User {UserId} does not have access to tree {TreeId}", userId, treeId);
-            return new List<MediaDto>();
-        }
-
-        // Verify person is in this tree
-        var treeMember = await _context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
-
-        if (treeMember == null)
-        {
-            _logger.LogWarning("Person {PersonId} not found in tree {TreeId}", personId, treeId);
-            return new List<MediaDto>();
-        }
-
         var mediaFiles = await _context.MediaFiles
             .Where(m => m.PersonId == personId)
             .OrderByDescending(m => m.UploadedAt)
@@ -211,24 +179,8 @@ public class MediaService : IMediaService
             return false;
         }
 
-        if (!await CanEditTree(tree, userId))
-        {
-            _logger.LogWarning("User {UserId} does not have edit access to tree {TreeId}", userId, treeId);
-            return false;
-        }
-
-        // Verify person is in this tree
-        var treeMember = await _context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
-
-        if (treeMember == null)
-        {
-            _logger.LogWarning("Person {PersonId} not found in tree {TreeId}", personId, treeId);
-            return false;
-        }
-
         var media = await _context.MediaFiles
-            .FirstOrDefaultAsync(m => m.Id == mediaId && m.PersonId == personId);
+          .FirstOrDefaultAsync(m => m.Id == mediaId && m.PersonId == personId);
 
         if (media == null)
         {
@@ -261,32 +213,6 @@ public class MediaService : IMediaService
             _logger.LogError(ex, "Error deleting media file {MediaId}", mediaId);
             return false;
         }
-    }
-
-    // Helper methods
-    private async Task<bool> HasAccessToTree(FamilyTree tree, int userId)
-    {
-        if (tree.OwnerId == userId)
-            return true;
-
-        if (tree.IsPublic)
-            return true;
-
-        var isCollaborator = await _context.TreeCollaborators
-            .AnyAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return isCollaborator;
-    }
-
-    private async Task<bool> CanEditTree(FamilyTree tree, int userId)
-    {
-        if (tree.OwnerId == userId)
-            return true;
-
-        var collaborator = await _context.TreeCollaborators
-            .FirstOrDefaultAsync(tc => tc.FamilyTreeId == tree.Id && tc.UserId == userId);
-
-        return collaborator?.Permission is "Edit" or "Admin";
     }
 
     private MediaDto MapToMediaDto(Media media)

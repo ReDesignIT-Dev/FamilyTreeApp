@@ -1,5 +1,4 @@
 using FamilyTreeApp.Server.Dtos.FamilyTree;
-using FamilyTreeApp.Server.Dtos.TreeCollaborator;
 using FamilyTreeApp.Server.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,176 +7,48 @@ using System.Security.Claims;
 namespace FamilyTreeApp.Server.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/familytrees")]
 [Authorize(Policy = "ActiveUserOnly")]
 public class FamilyTreesController : ControllerBase
 {
     private readonly IFamilyTreeService _familyTreeService;
-    private readonly ILogger<FamilyTreesController> _logger;
 
-    public FamilyTreesController(
-        IFamilyTreeService familyTreeService,
-        ILogger<FamilyTreesController> logger)
+    public FamilyTreesController(IFamilyTreeService familyTreeService)
     {
         _familyTreeService = familyTreeService;
-        _logger = logger;
     }
 
-    [HttpPost]
-    public async Task<ActionResult<FamilyTreeDto>> CreateTree([FromBody] CreateTreeDto dto)
+    [HttpGet("my")]
+    public async Task<ActionResult<FamilyTreeDto>> GetMyTree()
     {
         var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
+        if (userId == null) return Unauthorized();
 
-        var (success, tree, error) = await _familyTreeService.CreateTreeAsync(userId.Value, dto);
-
-        if (!success)
-            return BadRequest(new { message = error });
-
-        return CreatedAtAction(nameof(GetTreeById), new { id = tree!.Id }, tree);
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<List<TreeSummaryDto>>> GetUserTrees()
-    {
-        var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
-
-        var (success, trees, error) = await _familyTreeService.GetUserTreesAsync(userId.Value);
+        var (success, tree, error) = await _familyTreeService.GetUserTreeAsync(userId.Value);
 
         if (!success)
-            return BadRequest(new { message = error });
-
-        return Ok(trees);
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<FamilyTreeDto>> GetTreeById(int id)
-    {
-        var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
-
-        var (success, tree, error) = await _familyTreeService.GetTreeByIdAsync(id, userId.Value);
-
-        if (!success)
-            return error switch
-            {
-                "Family tree not found" => NotFound(new { message = error }),
-                "You don't have access to this tree" => Forbid(),
-                _ => BadRequest(new { message = error })
-            };
+            return NotFound(new { message = error });
 
         return Ok(tree);
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<FamilyTreeDto>> UpdateTree(int id, [FromBody] UpdateTreeDto dto)
+    [HttpPut("my")]
+    public async Task<ActionResult<FamilyTreeDto>> UpdateMyTree([FromBody] UpdateTreeDto dto)
     {
         var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
+        if (userId == null) return Unauthorized();
 
-        var (success, tree, error) = await _familyTreeService.UpdateTreeAsync(id, userId.Value, dto);
+        var (success, tree, error) = await _familyTreeService.UpdateTreeAsync(userId.Value, dto);
 
         if (!success)
-            return error switch
-            {
-                "Family tree not found" => NotFound(new { message = error }),
-                "You don't have permission to edit this tree" => Forbid(),
-                _ => BadRequest(new { message = error })
-            };
+            return NotFound(new { message = error });
 
         return Ok(tree);
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTree(int id)
-    {
-        var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
-
-        var (success, error) = await _familyTreeService.DeleteTreeAsync(id, userId.Value);
-
-        if (!success)
-            return error switch
-            {
-                "Family tree not found" => NotFound(new { message = error }),
-                "Only the owner can delete this tree" => Forbid(),
-                _ => BadRequest(new { message = error })
-            };
-
-        return NoContent();
-    }
-
-    [HttpPost("{id}/share")]
-    public async Task<ActionResult<CollaboratorDto>> ShareTree(int id, [FromBody] ShareTreeDto dto)
-    {
-        var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
-
-        var (success, collaborator, error) = await _familyTreeService.ShareTreeAsync(id, userId.Value, dto);
-
-        if (!success)
-            return error switch
-            {
-                "Family tree not found" => NotFound(new { message = error }),
-                "User not found" => NotFound(new { message = error }),
-                "You don't have permission to share this tree" => Forbid(),
-                _ => BadRequest(new { message = error })
-            };
-
-        return Ok(collaborator);
-    }
-
-    [HttpGet("{id}/collaborators")]
-    public async Task<ActionResult<List<CollaboratorDto>>> GetCollaborators(int id)
-    {
-        var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
-
-        var (success, collaborators, error) = await _familyTreeService.GetCollaboratorsAsync(id, userId.Value);
-
-        if (!success)
-            return error switch
-            {
-                "Family tree not found" => NotFound(new { message = error }),
-                "You don't have access to this tree" => Forbid(),
-                _ => BadRequest(new { message = error })
-            };
-
-        return Ok(collaborators);
-    }
-
-    [HttpDelete("{id}/collaborators/{collaboratorId}")]
-    public async Task<IActionResult> RemoveCollaborator(int id, int collaboratorId)
-    {
-        var userId = GetUserId();
-        if (userId == null)
-            return Unauthorized();
-
-        var (success, error) = await _familyTreeService.RemoveCollaboratorAsync(id, collaboratorId, userId.Value);
-
-        if (!success)
-            return error switch
-            {
-                "Family tree not found" => NotFound(new { message = error }),
-                "Collaborator not found" => NotFound(new { message = error }),
-                "You don't have permission to manage collaborators" => Forbid(),
-                _ => BadRequest(new { message = error })
-            };
-
-        return NoContent();
     }
 
     private int? GetUserId()
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(userIdClaim, out var userId) ? userId : null;
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(claim, out var id) ? id : null;
     }
 }

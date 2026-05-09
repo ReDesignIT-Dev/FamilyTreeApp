@@ -15,17 +15,14 @@ public class FamilyTreeContext : IdentityDbContext<User, IdentityRole<int>, int>
     public DbSet<Relationship> Relationships => Set<Relationship>();
     public DbSet<Media> MediaFiles => Set<Media>();
     public DbSet<TreeMember> TreeMembers => Set<TreeMember>();
-    public DbSet<TreeCollaborator> TreeCollaborators => Set<TreeCollaborator>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder); // Important: call base!
+        base.OnModelCreating(modelBuilder);
 
-        // TreeMember - Many-to-many configuration
         modelBuilder.Entity<TreeMember>()
             .HasKey(tm => new { tm.FamilyTreeId, tm.PersonId });
 
-        // Relationship - Parent/Child with same entity
         modelBuilder.Entity<Relationship>()
             .HasOne(r => r.Parent)
             .WithMany(p => p.ParentRelationships)

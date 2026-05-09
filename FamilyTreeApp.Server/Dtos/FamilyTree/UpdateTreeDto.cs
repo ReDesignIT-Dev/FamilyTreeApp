@@ -10,6 +10,4 @@ public class UpdateTreeDto
 
     [StringLength(1000)]
     public string? Description { get; set; }
-
-    public bool IsPublic { get; set; }
 }
