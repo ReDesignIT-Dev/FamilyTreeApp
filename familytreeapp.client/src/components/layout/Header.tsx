@@ -18,7 +18,7 @@ import {
   Home,
   Settings,
 } from '@mui/icons-material';
-import { PATH_HOME, PATH_TREES, PATH_SETTINGS } from '@/router/routes';
+import { PATH_HOME, PATH_MY_TREE, PATH_SETTINGS } from '@/router/routes';
 import AccountMenu from './AccountMenu';
 
 export default function Header() {
@@ -27,7 +27,7 @@ export default function Header() {
 
   const menuItems = [
     { text: 'Home', icon: <Home />, path: PATH_HOME },
-    { text: 'My Family Trees', icon: <AccountTree />, path: PATH_TREES },
+      { text: 'My Family Tree', icon: <AccountTree />, path: PATH_MY_TREE },
     { text: 'Settings', icon: <Settings />, path: PATH_SETTINGS },
   ];
 
