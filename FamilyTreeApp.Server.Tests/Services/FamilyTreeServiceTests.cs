@@ -1,10 +1,6 @@
 ﻿using FamilyTreeApp.Server.Dtos.FamilyTree;
-using FamilyTreeApp.Server.Dtos.Person;
-using FamilyTreeApp.Server.Interfaces;
-using FamilyTreeApp.Server.Models;
 using FamilyTreeApp.Server.Services;
 using FamilyTreeApp.Server.Tests.Helpers;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -12,7 +8,7 @@ namespace FamilyTreeApp.Server.Tests.Services;
 
 public class FamilyTreeServiceTests
 {
-    private readonly Mock<UserManager<User>> _userManager;
+    private readonly Mock<Microsoft.AspNetCore.Identity.UserManager<FamilyTreeApp.Server.Models.User>> _userManager;
     private readonly Mock<ILogger<FamilyTreeService>> _mockLogger;
 
     public FamilyTreeServiceTests()
@@ -22,41 +18,108 @@ public class FamilyTreeServiceTests
     }
 
     [Fact]
-    public async Task CreateTree_Success_ReturnTreeData()
+    public async Task CreateDefaultTreeAsync_Success_CreatesTreeInDatabase()
     {
         // Arrange
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyTreeService(context, _userManager.Object, _mockLogger.Object);
 
-        User testUser = TestDataSeeder.CreateTestUser(5, "Test User For Tree", "oneforallemail@gmail.com");
-        
-        // Add user to database so the service can find it
-        context.Users.Add(testUser);
+        var user = TestDataSeeder.CreateTestUser(1, "testuser", "test@example.com");
+        context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        var treeDto = new CreateTreeDto
-        {
-            Name = "My Family Tree",
-            Description = "Sample Test Description"
-        };
-        
         // Act
-        var (success, familyTreeDto, error) = await service.CreateTreeAsync(testUser.Id, treeDto);
+        await service.CreateDefaultTreeAsync(1, "testuser");
+
+        // Assert
+        var tree = context.FamilyTrees.FirstOrDefault(t => t.OwnerId == 1);
+        Assert.NotNull(tree);
+        Assert.Equal("testuser's Family Tree", tree.Name);
+        Assert.Equal(1, tree.OwnerId);
+    }
+
+    [Fact]
+    public async Task GetUserTreeAsync_Success_ReturnsTree()
+    {
+        // Arrange
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
+        var service = new FamilyTreeService(context, _userManager.Object, _mockLogger.Object);
+
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
+
+        // Act
+        var (success, treeDto, error) = await service.GetUserTreeAsync(owner.Id);
 
         // Assert
         Assert.True(success);
-        Assert.NotNull(familyTreeDto);
+        Assert.NotNull(treeDto);
         Assert.Null(error);
-        Assert.Equal("My Family Tree", familyTreeDto.Name);
-        Assert.Equal("Sample Test Description", familyTreeDto.Description);
-        Assert.Equal("Test User For Tree", familyTreeDto.OwnerUsername);
-        Assert.Equal(5, familyTreeDto.OwnerId);
-
-        // Verify tree was added to database
-        var savedTree = await context.FamilyTrees.FindAsync(familyTreeDto.Id);
-        Assert.NotNull(savedTree);
-
+        Assert.Equal("Test Tree", treeDto.Name);
+        Assert.Equal(tree.Id, treeDto.Id);
     }
 
+    [Fact]
+    public async Task GetUserTreeAsync_NoTree_ReturnsError()
+    {
+        // Arrange
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
+        var service = new FamilyTreeService(context, _userManager.Object, _mockLogger.Object);
 
+        // Act
+        var (success, treeDto, error) = await service.GetUserTreeAsync(999);
+
+        // Assert
+        Assert.False(success);
+        Assert.Null(treeDto);
+        Assert.Equal("Family tree not found", error);
+    }
+
+    [Fact]
+    public async Task UpdateTreeAsync_Success_UpdatesTreeData()
+    {
+        // Arrange
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
+        var service = new FamilyTreeService(context, _userManager.Object, _mockLogger.Object);
+
+        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
+
+        var dto = new UpdateTreeDto
+        {
+            Name = "Updated Tree Name",
+            Description = "Updated description"
+        };
+
+        // Act
+        var (success, treeDto, error) = await service.UpdateTreeAsync(owner.Id, dto);
+
+        // Assert
+        Assert.True(success);
+        Assert.NotNull(treeDto);
+        Assert.Null(error);
+        Assert.Equal("Updated Tree Name", treeDto.Name);
+        Assert.Equal("Updated description", treeDto.Description);
+        Assert.NotNull(treeDto.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateTreeAsync_NoTree_ReturnsError()
+    {
+        // Arrange
+        var context = TestDbContextFactory.CreateInMemoryDbContext();
+        var service = new FamilyTreeService(context, _userManager.Object, _mockLogger.Object);
+
+        var dto = new UpdateTreeDto
+        {
+            Name = "Updated Name",
+            Description = "Updated description"
+        };
+
+        // Act
+        var (success, treeDto, error) = await service.UpdateTreeAsync(999, dto);
+
+        // Assert
+        Assert.False(success);
+        Assert.Null(treeDto);
+        Assert.Equal("Family tree not found", error);
+    }
 }

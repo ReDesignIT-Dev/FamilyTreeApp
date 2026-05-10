@@ -26,16 +26,6 @@ public static class TestDataSeeder
         };
     }
 
-    public static TreeCollaborator CreateTestCollaborator(int treeId, int userId, string permission = "Edit")
-    {
-        return new TreeCollaborator
-        {
-            FamilyTreeId = treeId,
-            UserId = userId,
-            Permission = permission
-        };
-    }
-
     public static Person CreateTestPerson(
         int id = 1,
         string firstName = "John",
@@ -75,24 +65,5 @@ public static class TestDataSeeder
         await context.SaveChangesAsync();
 
         return (owner, tree);
-    }
-
-    /// <summary>
-    /// Seeds a scenario with owner and collaborator
-    /// </summary>
-    public static async Task<(User owner, User collaborator, FamilyTree tree, TreeCollaborator collaboration)> 
-        SeedCollaboratorScenarioAsync(FamilyTreeContext context, string permission = "Edit")
-    {
-        var owner = CreateTestUser(1, "owner", "owner@test.com");
-        var collaborator = CreateTestUser(2, "collab", "collab@test.com");
-        var tree = CreateTestFamilyTree(1, "Test Tree", 1, owner);
-        var collaboration = CreateTestCollaborator(1, 2, permission);
-
-        context.Users.AddRange(owner, collaborator);
-        context.FamilyTrees.Add(tree);
-        context.TreeCollaborators.Add(collaboration);
-        await context.SaveChangesAsync();
-
-        return (owner, collaborator, tree, collaboration);
     }
 }
