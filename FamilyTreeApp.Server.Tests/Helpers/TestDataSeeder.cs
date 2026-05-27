@@ -1,17 +1,36 @@
 using FamilyTreeApp.Server.Data;
+using FamilyTreeApp.Server.Dtos.User;
 using FamilyTreeApp.Server.Models;
+using FamilyTreeApp.Server.Models.Enums;
 
 namespace FamilyTreeApp.Server.Tests.Helpers;
 
 public static class TestDataSeeder
 {
-    public static User CreateTestUser(int id = 1, string userName = "testuser", string email = "test@example.com")
+    public static User CreateTestUser(int id = 1, string firstName = "firstName ", string lastName = "LastName", string email = "test@example.com")
     {
         return new User
         {
             Id = id,
-            UserName = userName,
+            FirstName = firstName,
+            LastName = lastName,
+            DateOfBirth = new DateOnly(1990, 1, 1),
             Email = email
+        };
+    }
+
+    public static RegisterDto CreateRegisterDtoFromUser(User user, Gender gender = Gender.Male)
+    {
+        return new RegisterDto
+        {
+            Email = user.Email ?? "test@example.com",
+            Password = "Test@1234",
+            PasswordConfirm = "Test@1234",      
+            RecaptchaToken = "test-token",
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Gender = gender,
+            DateOfBirth = user.DateOfBirth
         };
     }
 

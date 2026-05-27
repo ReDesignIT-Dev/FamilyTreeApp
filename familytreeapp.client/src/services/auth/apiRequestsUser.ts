@@ -46,11 +46,11 @@ async function makePostRequest<T>(
 }
 
 export async function postLogin({
-  username,
+  email,
   password,
   recaptchaToken,
 }: LoginData): Promise<ApiResponse<AuthTokenResponse> | undefined> {
-  const encodedAuthString = btoa(`${username}:${password}`);
+  const encodedAuthString = btoa(`${email}:${password}`);
 
   const response = await makePostRequest<AuthTokenResponse>(
     API_LOGIN_USER_URL,
@@ -64,7 +64,6 @@ export async function postLogin({
   return response;
 }
 
-// ✅ Pass data directly — no need to manually spread fields
 export async function registerUser(data: RegisterData): Promise<ApiResponse<MessageResponse> | undefined> {
   return makePostRequest<MessageResponse>(API_REGISTER_USER_URL, data);
 }

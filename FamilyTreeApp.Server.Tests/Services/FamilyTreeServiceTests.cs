@@ -24,17 +24,18 @@ public class FamilyTreeServiceTests
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyTreeService(context, _userManager.Object, _mockLogger.Object);
 
-        var user = TestDataSeeder.CreateTestUser(1, "testuser", "test@example.com");
+        var user = TestDataSeeder.CreateTestUser(1, "Stefan", "Kowalski");
         context.Users.Add(user);
         await context.SaveChangesAsync();
+        var dto = TestDataSeeder.CreateRegisterDtoFromUser(user);
 
         // Act
-        await service.CreateDefaultTreeAsync(1, "testuser");
+        await service.CreateDefaultTreeAsync(user.Id, dto);
 
         // Assert
         var tree = context.FamilyTrees.FirstOrDefault(t => t.OwnerId == 1);
         Assert.NotNull(tree);
-        Assert.Equal("testuser's Family Tree", tree.Name);
+        Assert.Equal("Stefan Kowalski's Family Tree", tree.Name);
         Assert.Equal(1, tree.OwnerId);
     }
 

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using FamilyTreeApp.Server.Models.Enums;
 
 namespace FamilyTreeApp.Server.Data;
 
@@ -15,6 +16,13 @@ public class FamilyTreeContext : IdentityDbContext<User, IdentityRole<int>, int>
     public DbSet<Relationship> Relationships => Set<Relationship>();
     public DbSet<Media> MediaFiles => Set<Media>();
     public DbSet<TreeMember> TreeMembers => Set<TreeMember>();
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder
+            .Properties<Gender>()
+            .HaveConversion<string>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

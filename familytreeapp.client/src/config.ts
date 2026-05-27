@@ -14,6 +14,8 @@ export const API_ACTIVATE_USER_URL = `${BACKEND_AUTH_URL}/confirm-email`;
 export const API_PASSWORD_RESET_URL = `${BACKEND_AUTH_URL}/password-reset`;
 export const API_REFRESH_TOKEN_URL = `${BACKEND_AUTH_URL}/refresh`;
 
+export const API_MY_TREE_URL = `${BACKEND_BASE_URL}/api/familytrees/my`;
+
 // ── External-facing frontend URLs (used in backend-sent emails, OAuth, etc.) ─
 // These are absolute URLs — NOT for internal navigation.
 // For internal navigation use PATH_* constants from @/router/routes.ts instead.

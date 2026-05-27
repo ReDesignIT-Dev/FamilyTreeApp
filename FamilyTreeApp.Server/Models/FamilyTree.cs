@@ -7,6 +7,8 @@ public class FamilyTree
     public string? Description { get; set; }
     public int OwnerId { get; set; }
     public User Owner { get; set; } = default!;
+    public int? OwnerPersonId { get; set; } 
+    public Person? OwnerPerson { get; set; } 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

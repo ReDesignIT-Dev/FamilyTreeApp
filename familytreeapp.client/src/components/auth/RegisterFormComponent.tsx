@@ -1,4 +1,3 @@
-import UsernameField from "@/components/auth/fields/UsernameField";
 import EmailField from "@/components/auth/fields/EmailField";
 import NewPasswordWithPasswordRepeatField from "@/components/auth/fields/NewPasswordWithPasswordRepeatField";
 import RecaptchaField from "@/components/auth/fields/RecaptchaField";
@@ -8,12 +7,22 @@ import Loading from "@/components/common/Loading";
 import { registerUser } from "@/services/auth/apiRequestsUser";
 import { GeneralApiError, MultipleFieldErrors } from "@/services/CustomErrors";
 import { useAuth } from "@/hooks/useAuth";
-import { Alert, Box, Button, Paper, Typography } from "@mui/material";
+import {
+    Alert,
+    Box,
+    Button,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
+    Paper,
+    Radio,
+    RadioGroup,
+    TextField,
+    Typography,
+} from "@mui/material";
 
 const RegisterFormComponent: React.FC = () => {
     const [isValid, setIsValid] = useState<boolean>(false);
-    const [username, setUsername] = useState<string>("");
-    const [isUsernameValid, setIsUsernameValid] = useState<boolean>(false);
     const [email, setEmail] = useState<string>("");
     const [isEmailValid, setIsEmailValid] = useState<boolean>(false);
     const [reCaptchaToken, setReCaptchaToken] = useState<string | null>(null);
@@ -25,23 +34,35 @@ const RegisterFormComponent: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
     const [registrationSuccessful, setRegistrationSuccessful] = useState<boolean>(false);
-    const [usernameServerError, setUsernameServerError] = useState<string>("");
     const [emailServerError, setEmailServerError] = useState<string>("");
+
+    // New fields
+    const [firstName, setFirstName] = useState<string>("");
+    const [lastName, setLastName] = useState<string>("");
+    const [gender, setGender] = useState<"Male" | "Female">("Male");
+    const [dateOfBirth, setDateOfBirth] = useState<string>("");
 
     const { isLoggedIn } = useAuth();
 
     useEffect(() => {
         if (isLoggedIn) {
             setEmail("");
-            setUsername("");
         }
     }, [isLoggedIn]);
 
+    const isNewFieldsValid =
+        firstName.trim().length > 0 &&
+        lastName.trim().length > 0 &&
+        dateOfBirth.trim().length > 0;
+
     useEffect(() => {
         setIsValid(
-            isEmailValid && isValidReCaptchaToken && isPasswordWithPasswordConfirmValid && isUsernameValid
+            isEmailValid &&
+            isValidReCaptchaToken &&
+            isPasswordWithPasswordConfirmValid &&
+            isNewFieldsValid
         );
-    }, [isEmailValid, isValidReCaptchaToken, isPasswordWithPasswordConfirmValid, isUsernameValid]);
+    }, [isEmailValid, isValidReCaptchaToken, isPasswordWithPasswordConfirmValid, isNewFieldsValid]);
 
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
@@ -55,11 +76,14 @@ const RegisterFormComponent: React.FC = () => {
 
         try {
             const response = await registerUser({
-                username,
                 email,
                 password,
                 passwordConfirm,
                 recaptchaToken: reCaptchaToken,
+                firstName,
+                lastName,
+                gender,
+                dateOfBirth,
             });
 
             if (response?.status === 200) {
@@ -70,8 +94,7 @@ const RegisterFormComponent: React.FC = () => {
         } catch (error) {
             if (error instanceof MultipleFieldErrors) {
                 error.errors.forEach((err) => {
-                    if (err.field === "username") setUsernameServerError(err.message);
-                    if (err.field === "email") setEmailServerError(err.message);  
+                    if (err.field === "email") setEmailServerError(err.message);
                     if (err.field === "detail") setErrorMessage(err.message);
                 });
             } else if (error instanceof GeneralApiError) {
@@ -110,20 +133,60 @@ const RegisterFormComponent: React.FC = () => {
                         alignItems="center"
                         gap={2}
                     >
-                        <Box width="100%">
-                            <UsernameField
-                                value={username}
-                                customClasses="w-100"
-                                onChange={(val) => { setUsername(val); setUsernameServerError(""); }} // ← clear on new input
-                                onValidate={setIsUsernameValid}
-                                disabled={false}
-                                externalError={usernameServerError}
+                        <Box width="100%" display="flex" gap={1}>
+                            <TextField
+                                label="First Name"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                                fullWidth
+                                size="small"
+                                error={firstName.trim().length === 0}
+                                helperText={firstName.trim().length === 0 ? "First name is required" : ""}
+                            />
+                            <TextField
+                                label="Last Name"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                                fullWidth
+                                size="small"
+                                error={lastName.trim().length === 0}
+                                helperText={lastName.trim().length === 0 ? "Last name is required" : ""}
                             />
                         </Box>
                         <Box width="100%">
+                            <FormControl>
+                                <FormLabel>Gender</FormLabel>
+                                <RadioGroup
+                                    row
+                                    value={gender}
+                                    onChange={(e) => setGender(e.target.value as "Male" | "Female")}
+                                >
+                                    <FormControlLabel value="Male" control={<Radio />} label="Male" />
+                                    <FormControlLabel value="Female" control={<Radio />} label="Female" />
+                                </RadioGroup>
+                            </FormControl>
+                        </Box>
+                        <Box width="100%">
+                            <TextField
+                                label="Date of Birth"
+                                type="date"
+                                value={dateOfBirth}
+                                onChange={(e) => setDateOfBirth(e.target.value)}
+                                required
+                                fullWidth
+                                size="small"
+                                slotProps={{ inputLabel: { shrink: true } }}
+                                error={dateOfBirth.trim().length === 0}
+                                helperText={dateOfBirth.trim().length === 0 ? "Date of birth is required" : ""}
+                            />
+                        </Box>
+                       
+                        <Box width="100%">
                             <EmailField
                                 value={email}
-                                onChange={(val) => { setEmail(val); setEmailServerError(""); }}       // ← clear on new input
+                                onChange={(val) => { setEmail(val); setEmailServerError(""); }}
                                 onValidate={setIsEmailValid}
                                 disabled={false}
                                 externalError={emailServerError}

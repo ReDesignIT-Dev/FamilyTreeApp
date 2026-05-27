@@ -165,6 +165,9 @@ public class FamilyMemberService : IFamilyMemberService
         if (tree == null)
             return (false, "Family tree not found");
 
+        if (tree.OwnerPersonId == personId)
+            return (false, "Cannot remove the owner from their own tree");
+
         var treeMember = await _context.TreeMembers
             .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
 

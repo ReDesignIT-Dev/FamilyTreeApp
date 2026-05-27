@@ -3,6 +3,7 @@ using System;
 using FamilyTreeApp.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FamilyTreeApp.Server.Migrations
 {
     [DbContext(typeof(FamilyTreeContext))]
-    partial class FamilyTreeContextModelSnapshot : ModelSnapshot
+    [Migration("20260510080601_ChangeGenderToEnum")]
+    partial class ChangeGenderToEnum
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,17 +46,12 @@ namespace FamilyTreeApp.Server.Migrations
                     b.Property<int>("OwnerId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("OwnerPersonId")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId");
-
-                    b.HasIndex("OwnerPersonId");
 
                     b.ToTable("FamilyTrees");
                 });
@@ -448,13 +446,7 @@ namespace FamilyTreeApp.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FamilyTreeApp.Server.Models.Person", "OwnerPerson")
-                        .WithMany()
-                        .HasForeignKey("OwnerPersonId");
-
                     b.Navigation("Owner");
-
-                    b.Navigation("OwnerPerson");
                 });
 
             modelBuilder.Entity("FamilyTreeApp.Server.Models.Media", b =>

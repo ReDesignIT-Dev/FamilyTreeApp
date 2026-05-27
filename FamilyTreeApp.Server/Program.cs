@@ -14,6 +14,8 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Scalar.AspNetCore;
 using System.Text;
+using FamilyTreeApp.Server.Models.Enums;
+using System.Text.Json.Serialization;
 
 DotNetEnv.Env.Load();
 
@@ -28,7 +30,11 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
@@ -59,7 +65,7 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
     options.Password.RequireLowercase = true;
     options.Password.RequireDigit = true;
     options.User.RequireUniqueEmail = true;
-    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.@+";
 
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     options.Lockout.MaxFailedAccessAttempts = 5;
@@ -67,6 +73,7 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 })
 .AddEntityFrameworkStores<FamilyTreeContext>()
 .AddDefaultTokenProviders();
+
 
 builder.Services.AddAuthentication(options =>
 {
@@ -181,8 +188,9 @@ if (builder.Environment.IsProduction())
 }
 
 var app = builder.Build();
-app.UseCors();
+
 app.UseHttpsRedirection();
+app.UseCors();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -217,10 +225,14 @@ using (var scope = app.Services.CreateScope())
     {
         adminUser = new User
         {
-            UserName = "admin",
+            UserName = adminEmail,
             Email = adminEmail,
             EmailConfirmed = true,
-            IsActive = true
+            IsActive = true,
+            FirstName = "Admin",
+            LastName = "User",
+            Gender = Gender.Male,
+            DateOfBirth = new DateOnly(1990, 1, 1)
         };
         var result = await userManager.CreateAsync(adminUser, adminPassword);
         if (result.Succeeded)

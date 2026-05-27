@@ -36,21 +36,21 @@ public class UserService : IUserService
     {
         var user = new User
         {
-            UserName = dto.Username,
+            UserName = dto.Email,
             Email = dto.Email,
             IsActive = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Gender = dto.Gender,
+            DateOfBirth = dto.DateOfBirth,
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
             return null;
 
-        return new UserDto
-        {
-            Id = user.Id,
-            Username = user.UserName!,
-        };
+        return new UserDto { Id = user.Id, Username = user.Email! };
     }
 
 

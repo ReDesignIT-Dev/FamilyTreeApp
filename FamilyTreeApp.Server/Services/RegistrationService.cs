@@ -1,4 +1,3 @@
-using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.User;
 using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
@@ -13,7 +12,6 @@ public class RegistrationService : IRegistrationService
     private readonly IFamilyTreeService _familyTreeService;
     private readonly IEmailService _emailService;
     private readonly UserManager<User> _userManager;
-    private readonly FamilyTreeContext _dbContext;
     private readonly IConfiguration _config;
     private readonly ILogger<RegistrationService> _logger;
 
@@ -22,7 +20,6 @@ public class RegistrationService : IRegistrationService
         IFamilyTreeService familyTreeService,
         IEmailService emailService,
         UserManager<User> userManager,
-        FamilyTreeContext dbContext,
         IConfiguration config,
         ILogger<RegistrationService> logger)
     {
@@ -30,15 +27,12 @@ public class RegistrationService : IRegistrationService
         _familyTreeService = familyTreeService;
         _emailService = emailService;
         _userManager = userManager;
-        _dbContext = dbContext;
         _config = config;
         _logger = logger;
     }
 
     public async Task<(bool Success, string? Error)> RegisterAsync(RegisterDto dto)
     {
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
-
         try
         {
             var userDto = await _userService.RegisterAsync(dto);
@@ -49,7 +43,7 @@ public class RegistrationService : IRegistrationService
             if (user == null)
                 return (false, "User creation failed.");
 
-            await _familyTreeService.CreateDefaultTreeAsync(user.Id, user.UserName!);
+            await _familyTreeService.CreateDefaultTreeAsync(user.Id, dto);
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var frontendBaseUrl = _config["Frontend:BaseUrl"];
@@ -58,15 +52,13 @@ public class RegistrationService : IRegistrationService
             var body = _emailService.GetActivationEmailBody(user.UserName ?? user.Email!, confirmationLink);
 
             await _emailService.SendAsync(user.Email!, subject, body);
-            await transaction.CommitAsync();
 
             _logger.LogInformation("User {UserId} registered successfully", user.Id);
             return (true, null);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Registration failed, transaction rolled back");
+            _logger.LogError(ex, "Registration failed");
             return (false, "Registration failed: unable to send activation email. Please try again.");
         }
     }

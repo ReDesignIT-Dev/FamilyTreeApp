@@ -1,5 +1,6 @@
 using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.FamilyTree;
+using FamilyTreeApp.Server.Dtos.User;
 using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
 using Microsoft.AspNetCore.Identity;
@@ -23,14 +24,30 @@ public class FamilyTreeService : IFamilyTreeService
         _logger = logger;
     }
 
-    public async Task CreateDefaultTreeAsync(int userId, string username)
+    public async Task CreateDefaultTreeAsync(int userId, RegisterDto dto)
     {
-        _context.FamilyTrees.Add(new FamilyTree
+        var person = new Person
         {
-            Name = $"{username}'s Family Tree",
-            OwnerId = userId,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Gender = dto.Gender.ToString(),
+            BirthDate = dto.DateOfBirth,
             CreatedAt = DateTime.UtcNow
-        });
+        };
+        _context.People.Add(person);
+        await _context.SaveChangesAsync();
+
+        var tree = new FamilyTree
+        {
+            Name = $"{dto.FirstName} {dto.LastName}'s Family Tree",
+            OwnerId = userId,
+            OwnerPersonId = person.Id,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.FamilyTrees.Add(tree);
+        await _context.SaveChangesAsync();
+
+        _context.TreeMembers.Add(new TreeMember { FamilyTreeId = tree.Id, PersonId = person.Id });
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Default family tree created for user {UserId}", userId);

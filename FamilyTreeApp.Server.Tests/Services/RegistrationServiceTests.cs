@@ -36,7 +36,6 @@ public class RegistrationServiceTests
             _mockFamilyTreeService.Object,
             _mockEmailService.Object,
             _mockUserManager.Object,
-            context,
             _mockConfig.Object,
             _mockLogger.Object);
     }
@@ -50,7 +49,8 @@ public class RegistrationServiceTests
 
         var dto = new RegisterDto
         {
-            Username = "newuser",
+            FirstName = "FirstName",
+            LastName = "LastName",
             Email = "newuser@example.com",
             Password = "Password123!",
             PasswordConfirm = "Password123!",
@@ -82,7 +82,7 @@ public class RegistrationServiceTests
             .Returns(Task.CompletedTask);
 
         _mockFamilyTreeService
-            .Setup(s => s.CreateDefaultTreeAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(s => s.CreateDefaultTreeAsync(It.IsAny<int>(), It.IsAny<RegisterDto>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -93,7 +93,7 @@ public class RegistrationServiceTests
         Assert.Null(error);
 
         _mockFamilyTreeService.Verify(
-            s => s.CreateDefaultTreeAsync(registeredUser.Id, registeredUser.UserName!),
+            s => s.CreateDefaultTreeAsync(registeredUser.Id, dto),
             Times.Once);
     }
 
@@ -106,7 +106,8 @@ public class RegistrationServiceTests
 
         var dto = new RegisterDto
         {
-            Username = "existinguser",
+            FirstName = "FirstName",
+            LastName = "LastName",
             Email = "existing@example.com",
             Password = "Password123!",
             PasswordConfirm = "Password123!",
@@ -125,7 +126,7 @@ public class RegistrationServiceTests
         Assert.Equal("Username or email is already taken.", error);
 
         _mockFamilyTreeService.Verify(
-            s => s.CreateDefaultTreeAsync(It.IsAny<int>(), It.IsAny<string>()),
+            s => s.CreateDefaultTreeAsync(It.IsAny<int>(), It.IsAny<RegisterDto>()),
             Times.Never);
     }
 }

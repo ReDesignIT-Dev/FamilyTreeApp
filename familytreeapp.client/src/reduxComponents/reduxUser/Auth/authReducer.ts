@@ -43,12 +43,12 @@ function extractErrorMessage(error: unknown): string {
 
 export const loginUser = createAsyncThunk<
     LoginResponse,
-    { username: string; password: string; recaptchaToken: string | null }
+    { email: string; password: string; recaptchaToken: string | null }
 >(
     "auth/loginUser",
-    async ({ username, password, recaptchaToken }, { rejectWithValue }) => {
+    async ({ email, password, recaptchaToken }, { rejectWithValue }) => {
         try {
-            const response = await postLogin({ username, password, recaptchaToken });
+            const response = await postLogin({ email, password, recaptchaToken });
             if (response && response.status === 200) {
                 const { token, username: responseUsername } = response.data as LoginResponse;
                 setToken(token);
