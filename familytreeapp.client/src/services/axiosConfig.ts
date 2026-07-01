@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
-import { BACKEND_BASE_URL } from '@/config';
+import { BACKEND_BASE_URL, API_LOGIN_USER_URL } from '@/config';
 import { getValidatedToken, removeToken, removeUserData, setToken } from '@/utils/cookies';
 import { PATH_AUTH_LOGIN } from '@/router/routes';
 import { AxiosError } from 'axios';
@@ -35,7 +35,9 @@ apiClient.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as typeof error.config & { _retry?: boolean };
 
-        if (error.response?.status === 401 && !originalRequest?._retry) {
+        const isLoginEndpoint = originalRequest?.url === API_LOGIN_USER_URL;
+
+        if (error.response?.status === 401 && !originalRequest?._retry && !isLoginEndpoint) {
             if (isRefreshing) {
                 // Queue requests that come in while a refresh is already in progress
                 return new Promise((resolve, reject) => {

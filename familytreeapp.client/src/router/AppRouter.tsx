@@ -16,6 +16,8 @@ import ChangePasswordSettings from '@/pages/settings/ChangePasswordSettings';
 import SecuritySettings from '@/pages/settings/SecuritySettings';
 import NotificationsSettings from '@/pages/settings/NotificationsSettings';
 import DangerZoneSettings from '@/pages/settings/DangerZoneSettings';
+import GuestRoute from '@/router/GuestRoute';
+import PrivateRoute from '@/router/PrivateRoute';
 import {
     ROUTE_AUTH, ROUTE_AUTH_LOGIN, ROUTE_AUTH_REGISTER,
     ROUTE_AUTH_PASSWORD_RECOVERY, ROUTE_AUTH_PASSWORD_RESET,
@@ -42,7 +44,7 @@ const router = createBrowserRouter([
 
             {
                 path: ROUTE_SETTINGS,
-                element: <SettingsLayout />,
+                element: <PrivateRoute><SettingsLayout /></PrivateRoute>,
                 children: [
                     { index: true, element: <Navigate to={ROUTE_SETTINGS_PROFILE} replace /> },
                     { path: ROUTE_SETTINGS_PROFILE, element: <ProfileSettings /> },
@@ -55,7 +57,7 @@ const router = createBrowserRouter([
 
             {
                 path: ROUTE_AUTH,
-                element: <AuthPage />,
+                element: <GuestRoute><AuthPage /></GuestRoute>,
                 children: [
                     { index: true, element: <Navigate to={ROUTE_AUTH_LOGIN} replace /> },
                     { path: ROUTE_AUTH_LOGIN, element: <LoginFormComponent /> },

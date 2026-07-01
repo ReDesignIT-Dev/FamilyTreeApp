@@ -21,6 +21,12 @@ import {
     Typography,
 } from "@mui/material";
 
+interface TouchedFields {
+    firstName: boolean;
+    lastName: boolean;
+    dateOfBirth: boolean;
+}
+
 const RegisterFormComponent: React.FC = () => {
     const [isValid, setIsValid] = useState<boolean>(false);
     const [email, setEmail] = useState<string>("");
@@ -36,11 +42,17 @@ const RegisterFormComponent: React.FC = () => {
     const [registrationSuccessful, setRegistrationSuccessful] = useState<boolean>(false);
     const [emailServerError, setEmailServerError] = useState<string>("");
 
-    // New fields
     const [firstName, setFirstName] = useState<string>("");
     const [lastName, setLastName] = useState<string>("");
     const [gender, setGender] = useState<"Male" | "Female">("Male");
     const [dateOfBirth, setDateOfBirth] = useState<string>("");
+
+    const [touched, setTouched] = useState<TouchedFields>({
+        firstName: false,
+        lastName: false,
+        dateOfBirth: false,
+    });
+    const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
 
     const { isLoggedIn } = useAuth();
 
@@ -64,10 +76,18 @@ const RegisterFormComponent: React.FC = () => {
         );
     }, [isEmailValid, isValidReCaptchaToken, isPasswordWithPasswordConfirmValid, isNewFieldsValid]);
 
+    const handleBlur = (field: keyof TouchedFields) => {
+        setTouched((prev) => ({ ...prev, [field]: true }));
+    };
+
+    const showError = (field: keyof TouchedFields, isEmpty: boolean): boolean =>
+        (touched[field] || submitAttempted) && isEmpty;
+
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
+        setSubmitAttempted(true);
+
         if (!isValid) {
-            setErrorMessage("Please fix the errors above before submitting.");
             return;
         }
 
@@ -138,21 +158,31 @@ const RegisterFormComponent: React.FC = () => {
                                 label="First Name"
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
+                                onBlur={() => handleBlur("firstName")}
                                 required
                                 fullWidth
                                 size="small"
-                                error={firstName.trim().length === 0}
-                                helperText={firstName.trim().length === 0 ? "First name is required" : ""}
+                                error={showError("firstName", firstName.trim().length === 0)}
+                                helperText={
+                                    showError("firstName", firstName.trim().length === 0)
+                                        ? "First name is required"
+                                        : ""
+                                }
                             />
                             <TextField
                                 label="Last Name"
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
+                                onBlur={() => handleBlur("lastName")}
                                 required
                                 fullWidth
                                 size="small"
-                                error={lastName.trim().length === 0}
-                                helperText={lastName.trim().length === 0 ? "Last name is required" : ""}
+                                error={showError("lastName", lastName.trim().length === 0)}
+                                helperText={
+                                    showError("lastName", lastName.trim().length === 0)
+                                        ? "Last name is required"
+                                        : ""
+                                }
                             />
                         </Box>
                         <Box width="100%">
@@ -174,15 +204,20 @@ const RegisterFormComponent: React.FC = () => {
                                 type="date"
                                 value={dateOfBirth}
                                 onChange={(e) => setDateOfBirth(e.target.value)}
+                                onBlur={() => handleBlur("dateOfBirth")}
                                 required
                                 fullWidth
                                 size="small"
                                 slotProps={{ inputLabel: { shrink: true } }}
-                                error={dateOfBirth.trim().length === 0}
-                                helperText={dateOfBirth.trim().length === 0 ? "Date of birth is required" : ""}
+                                error={showError("dateOfBirth", dateOfBirth.trim().length === 0)}
+                                helperText={
+                                    showError("dateOfBirth", dateOfBirth.trim().length === 0)
+                                        ? "Date of birth is required"
+                                        : ""
+                                }
                             />
                         </Box>
-                       
+
                         <Box width="100%">
                             <EmailField
                                 value={email}
@@ -208,7 +243,7 @@ const RegisterFormComponent: React.FC = () => {
                             onValidate={setIsValidRecaptchaToken}
                             setReturnToken={setReCaptchaToken}
                         />
-                        <Button type="submit" variant="contained" fullWidth disabled={!isValid}>
+                        <Button type="submit" variant="contained" fullWidth>
                             Submit
                         </Button>
                         {errorMessage && (

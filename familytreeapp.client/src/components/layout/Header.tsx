@@ -1,76 +1,32 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  AccountTree,
-  Home,
-  Settings,
-} from '@mui/icons-material';
-import { PATH_HOME, PATH_MY_TREE, PATH_SETTINGS } from '@/router/routes';
+import { AppBar, Box, Button, Toolbar, Typography } from '@mui/material';
+import { AccountTree } from '@mui/icons-material';
+import { PATH_HOME, PATH_MY_TREE } from '@/router/routes';
+import { useAppSelector } from '@/reduxComponents/hooks';
 import AccountMenu from './AccountMenu';
 
 export default function Header() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
 
-  const menuItems = [
-    { text: 'Home', icon: <Home />, path: PATH_HOME },
-      { text: 'My Family Tree', icon: <AccountTree />, path: PATH_MY_TREE },
-    { text: 'Settings', icon: <Settings />, path: PATH_SETTINGS },
-  ];
+    return (
+        <AppBar position="static">
+            <Toolbar>
+                <Button color="inherit" onClick={() => navigate(PATH_HOME, { replace: true })}>
+                    <AccountTree sx={{ mr: 1 }} />
+                    Family Tree App
+                </Button>
 
-  const handleNavigate = (path: string) => {
-    navigate(path);
-    setDrawerOpen(false);
-  };
+                {isLoggedIn && (
+                    <Button color="inherit" onClick={() => navigate(PATH_MY_TREE, { replace: true })}>
+                        My Family Tree
+                    </Button>
+                )}
 
-  return (
-    <>
-      <AppBar position="static">
-        <Toolbar>
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            sx={{ mr: 2 }}
-            onClick={() => setDrawerOpen(true)}
-          >
-            <MenuIcon />
-          </IconButton>
-          <AccountTree sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Family Tree App
-          </Typography>
+                <Box sx={{ flexGrow: 1 }} />
 
-          <AccountMenu />
-        </Toolbar>
-      </AppBar>
-
-      <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <List sx={{ width: 250 }}>
-          {menuItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton onClick={() => handleNavigate(item.path)}>
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-    </>
-  );
+                <AccountMenu />
+            </Toolbar>
+        </AppBar>
+    );
 }
