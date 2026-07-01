@@ -142,9 +142,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-var dbType = builder.Configuration["DEV_DB"] ?? "sqlite";
+var dbType = builder.Configuration["DEV_DB"];
 
-if (dbType.ToLower() == "postgres")
+if (dbType != null && dbType.Equals("postgres", StringComparison.CurrentCultureIgnoreCase))
 {
     var host = builder.Configuration["POSTGRES_HOST"];
     var database = builder.Configuration["POSTGRES_DB"];
@@ -152,27 +152,21 @@ if (dbType.ToLower() == "postgres")
     var password = builder.Configuration["POSTGRES_PASSWORD"];
     var port = builder.Configuration["POSTGRES_PORT"] ?? "5432";
 
-    // Validate all required values are present
     if (string.IsNullOrEmpty(host))
-        throw new InvalidOperationException("POSTGRES_HOST is required when using PostgreSQL");
+        throw new InvalidOperationException("POSTGRES_HOST is required");
     if (string.IsNullOrEmpty(database))
-        throw new InvalidOperationException("POSTGRES_DB is required when using PostgreSQL");
+        throw new InvalidOperationException("POSTGRES_DB is required");
     if (string.IsNullOrEmpty(username))
-        throw new InvalidOperationException("POSTGRES_USER is required when using PostgreSQL");
+        throw new InvalidOperationException("POSTGRES_USER is required");
     if (string.IsNullOrEmpty(password))
-        throw new InvalidOperationException("POSTGRES_PASSWORD is required when using PostgreSQL");
+        throw new InvalidOperationException("POSTGRES_PASSWORD is required");
 
     var connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password}";
     builder.Services.AddDbContext<FamilyTreeContext>(opt => opt.UseNpgsql(connectionString));
 }
-else if (dbType.ToLower() == "sqlite")
-{
-    var connectionString = builder.Configuration.GetConnectionString("SQLiteConnection");
-    builder.Services.AddDbContext<FamilyTreeContext>(opt => opt.UseSqlite(connectionString));
-}
 else
 {
-    throw new InvalidOperationException("Unsupported DEV_DB type. Use 'sqlite' or 'postgres'.");
+    throw new InvalidOperationException("Unsupported DEV_DB type. Accepted only 'postgres'.");
 }
 
 if (builder.Environment.IsProduction())
@@ -200,7 +194,7 @@ if (!app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<FamilyTreeContext>();
-    db.Database.Migrate();
+    await db.Database.MigrateAsync();
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
     string[] roles = ["Admin", "User", "Moderator"];
@@ -218,7 +212,7 @@ using (var scope = app.Services.CreateScope())
     var adminPassword = config["ADMIN_PASSWORD"] ?? "";
     if (adminEmail == "" || adminPassword == "")
     {
-        throw new Exception("Admin email and password must be set in environment variables or appsettings.");
+        throw new InvalidOperationException("Admin email and password must be set in environment variables or appsettings.");
     }
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
@@ -259,4 +253,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

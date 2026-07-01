@@ -26,7 +26,7 @@ public class FamilyTreeServiceTests
 
         var user = TestDataSeeder.CreateTestUser(1, "Stefan", "Kowalski");
         context.Users.Add(user);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var dto = TestDataSeeder.CreateRegisterDtoFromUser(user);
 
         // Act
@@ -82,7 +82,7 @@ public class FamilyTreeServiceTests
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyTreeService(context, _userManager.Object, _mockLogger.Object);
 
-        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
+        var (owner, _) = await TestDataSeeder.SeedBasicScenarioAsync(context);
 
         var dto = new UpdateTreeDto
         {

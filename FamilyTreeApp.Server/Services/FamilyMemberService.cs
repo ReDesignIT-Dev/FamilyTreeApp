@@ -1,3 +1,4 @@
+using FamilyTreeApp.Server.Constants;
 using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
@@ -6,24 +7,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FamilyTreeApp.Server.Services;
 
-public class FamilyMemberService : IFamilyMemberService
+public partial class FamilyMemberService(
+    FamilyTreeContext context,
+    ILogger<FamilyMemberService> logger,
+    IPersonFactory personFactory) : IFamilyMemberService
 {
-    private readonly FamilyTreeContext _context;
-    private readonly IHtmlSanitizerService _htmlSanitizer;
-    private readonly ILogger<FamilyMemberService> _logger;
-    private readonly IPersonFactory _personFactory;
-
-    public FamilyMemberService(
-        FamilyTreeContext context,
-        IHtmlSanitizerService htmlSanitizer,
-        ILogger<FamilyMemberService> logger,
-        IPersonFactory personFactory)
-    {
-        _context = context;
-        _htmlSanitizer = htmlSanitizer;
-        _logger = logger;
-        _personFactory = personFactory;
-    }
+    private readonly FamilyTreeContext _context = context;
+    private readonly ILogger<FamilyMemberService> _logger = logger;
+    private readonly IPersonFactory _personFactory = personFactory;
 
     public async Task<(bool Success, Person? Person, string? Error)> AddPersonToTreeAsync(
         int treeId,
@@ -34,14 +25,10 @@ public class FamilyMemberService : IFamilyMemberService
             .FirstOrDefaultAsync(t => t.Id == treeId);
 
         if (tree == null)
-            return (false, null, "Family tree not found");
+            return (false, null, ServiceErrors.FamilyTreeNotFound);
 
-      
-        if (dto.DeathDate.HasValue && dto.BirthDate.HasValue)
-        {
-            if (dto.DeathDate < dto.BirthDate)
-                return (false, null, "Death date cannot be before birth date");
-        }
+        if (dto.DeathDate.HasValue && dto.BirthDate.HasValue && dto.DeathDate < dto.BirthDate)
+            return (false, null, ServiceErrors.DeathBeforeBirth);
 
         var person = _personFactory.Create(dto);
 
@@ -57,9 +44,7 @@ public class FamilyMemberService : IFamilyMemberService
         _context.TreeMembers.Add(treeMember);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "User {UserId} added person {PersonId} to tree {TreeId}",
-            userId, person.Id, treeId);
+        LogPersonAddedToTree(userId, person.Id, treeId);
 
         return (true, person, null);
     }
@@ -75,7 +60,7 @@ public class FamilyMemberService : IFamilyMemberService
             .FirstOrDefaultAsync(t => t.Id == treeId);
 
         if (tree == null)
-            return (false, null, "Family tree not found");
+            return (false, null, ServiceErrors.FamilyTreeNotFound);
 
         var members = tree.Members
             .Select(tm => MapToPersonSummaryDto(tm.Person))
@@ -96,13 +81,13 @@ public class FamilyMemberService : IFamilyMemberService
             .FirstOrDefaultAsync(t => t.Id == treeId);
 
         if (tree == null)
-            return (false, null, "Family tree not found");
+            return (false, null, ServiceErrors.FamilyTreeNotFound);
 
         var treeMember = await _context.TreeMembers
             .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
 
         if (treeMember == null)
-            return (false, null, "Person not found in this tree");
+            return (false, null, ServiceErrors.PersonNotFoundInTree);
 
         var person = await _context.People
             .AsNoTracking()
@@ -114,7 +99,7 @@ public class FamilyMemberService : IFamilyMemberService
             .FirstOrDefaultAsync(p => p.Id == personId);
 
         if (person == null)
-            return (false, null, "Person not found");
+            return (false, null, ServiceErrors.PersonNotFound);
 
         return (true, MapToPersonDto(person), null);
     }
@@ -127,31 +112,26 @@ public class FamilyMemberService : IFamilyMemberService
     {
         var tree = await _context.FamilyTrees.FindAsync(treeId);
         if (tree == null)
-            return (false, null, "Family tree not found");
+            return (false, null, ServiceErrors.FamilyTreeNotFound);
 
         var treeMember = await _context.TreeMembers
             .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
 
         if (treeMember == null)
-            return (false, null, "Person not found in this tree");
+            return (false, null, ServiceErrors.PersonNotFoundInTree);
 
         var person = await _context.People.FindAsync(personId);
         if (person == null)
-            return (false, null, "Person not found");
+            return (false, null, ServiceErrors.PersonNotFound);
 
         _personFactory.ApplyUpdate(person, dto);
 
-        if (person.DeathDate.HasValue && person.BirthDate.HasValue)
-        {
-            if (person.DeathDate < person.BirthDate)
-                return (false, null, "Death date cannot be before birth date");
-        }
+        if (person.DeathDate.HasValue && person.BirthDate.HasValue && person.DeathDate < person.BirthDate)
+            return (false, null, ServiceErrors.DeathBeforeBirth);
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "User {UserId} updated person {PersonId} in tree {TreeId}",
-            userId, personId, treeId);
+        LogPersonUpdated(userId, personId, treeId);
 
         return (true, MapToPersonDto(person), null);
     }
@@ -163,35 +143,32 @@ public class FamilyMemberService : IFamilyMemberService
     {
         var tree = await _context.FamilyTrees.FindAsync(treeId);
         if (tree == null)
-            return (false, "Family tree not found");
+            return (false, ServiceErrors.FamilyTreeNotFound);
 
         if (tree.OwnerPersonId == personId)
-            return (false, "Cannot remove the owner from their own tree");
+            return (false, ServiceErrors.CannotRemoveOwner);
 
         var treeMember = await _context.TreeMembers
             .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
 
         if (treeMember == null)
-            return (false, "Person not found in this tree");
+            return (false, ServiceErrors.PersonNotFoundInTree);
 
         var hasRelationships = await _context.Relationships
             .AnyAsync(r => r.ParentId == personId || r.ChildId == personId);
 
         if (hasRelationships)
-            return (false, "Cannot remove person with existing relationships. Remove relationships first.");
+            return (false, ServiceErrors.PersonHasRelationships);
 
         _context.TreeMembers.Remove(treeMember);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "User {UserId} removed person {PersonId} from tree {TreeId}",
-            userId, personId, treeId);
+        LogPersonRemovedFromTree(userId, personId, treeId);
 
         return (true, null);
     }
 
-
-    private PersonDto MapToPersonDto(Person person)
+    private static PersonDto MapToPersonDto(Person person)
     {
         return new PersonDto
         {
@@ -211,7 +188,7 @@ public class FamilyMemberService : IFamilyMemberService
         };
     }
 
-    private PersonSummaryDto MapToPersonSummaryDto(Person person)
+    private static PersonSummaryDto MapToPersonSummaryDto(Person person)
     {
         return new PersonSummaryDto
         {

@@ -1,3 +1,5 @@
+using FamilyTreeApp.Server.Constants;
+
 using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -9,18 +11,10 @@ namespace FamilyTreeApp.Server.Controllers;
 [ApiController]
 [Route("api/trees/{treeId}/members")]
 [Authorize(Policy = "ActiveUserOnly")]
-public class FamilyMembersController : ControllerBase
+public class FamilyMembersController(
+    IFamilyMemberService familyMemberService) : ControllerBase
 {
-    private readonly IFamilyMemberService _familyMemberService;
-    private readonly ILogger<FamilyMembersController> _logger;
-
-    public FamilyMembersController(
-        IFamilyMemberService familyMemberService,
-        ILogger<FamilyMembersController> logger)
-    {
-        _familyMemberService = familyMemberService;
-        _logger = logger;
-    }
+    private readonly IFamilyMemberService _familyMemberService = familyMemberService;
 
     // POST /api/trees/{treeId}/members - Add person to tree
     [HttpPost]
@@ -35,7 +29,7 @@ public class FamilyMembersController : ControllerBase
         if (!success)
             return error switch
             {
-                "Family tree not found" => NotFound(new { message = error }),
+                ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
                 "You don't have permission to edit this tree" => Forbid(),
                 _ => BadRequest(new { message = error })
             };
@@ -59,8 +53,8 @@ public class FamilyMembersController : ControllerBase
         if (!success)
             return error switch
             {
-                "Family tree not found" => NotFound(new { message = error }),
-                "You don't have access to this tree" => Forbid(),
+                ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
+                ServiceErrors.NoAccessPermission => Forbid(),
                 _ => BadRequest(new { message = error })
             };
 
@@ -80,7 +74,7 @@ public class FamilyMembersController : ControllerBase
         if (!success)
             return error switch
             {
-                "Family tree not found" => NotFound(new { message = error }),
+                ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
                 "Person not found in this tree" => NotFound(new { message = error }),
                 "Person not found" => NotFound(new { message = error }),
                 "You don't have access to this tree" => Forbid(),
@@ -103,7 +97,7 @@ public class FamilyMembersController : ControllerBase
         if (!success)
             return error switch
             {
-                "Family tree not found" => NotFound(new { message = error }),
+                ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
                 "Person not found in this tree" => NotFound(new { message = error }),
                 "Person not found" => NotFound(new { message = error }),
                 "You don't have permission to edit this tree" => Forbid(),
@@ -126,7 +120,7 @@ public class FamilyMembersController : ControllerBase
         if (!success)
             return error switch
             {
-                "Family tree not found" => NotFound(new { message = error }),
+                ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
                 "Person not found in this tree" => NotFound(new { message = error }),
                 "You don't have permission to edit this tree" => Forbid(),
                 _ => BadRequest(new { message = error })
@@ -142,7 +136,7 @@ public class FamilyMembersController : ControllerBase
         return int.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 
-    private PersonDto MapToPersonDto(Models.Person person)
+    private static PersonDto MapToPersonDto(Models.Person person)
     {
         return new PersonDto
         {

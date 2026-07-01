@@ -30,9 +30,7 @@ public class FamilyMemberServiceTests
         // Arrange
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(
-            context, _mockHtmlSanitizer.Object, _mockLogger.Object, _realPersonFactory);
-
-        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
+            context, _mockLogger.Object, _realPersonFactory);
 
         var dto = new CreatePersonDto
         {
@@ -58,11 +56,11 @@ public class FamilyMemberServiceTests
         Assert.Equal("New York", person.BirthPlace);
         Assert.Equal("Male", person.Gender);
 
-        var savedPerson = await context.People.FindAsync(person.Id);
+        var savedPerson = await context.People.FindAsync(new object?[] { person.Id }, TestContext.Current.CancellationToken);
         Assert.NotNull(savedPerson);
 
         var treeMember = await context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == 1 && tm.PersonId == person.Id);
+            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == 1 && tm.PersonId == person.Id, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(treeMember);
     }
 
@@ -72,7 +70,7 @@ public class FamilyMemberServiceTests
         // Arrange
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(
-            context, _mockHtmlSanitizer.Object, _mockLogger.Object, _mockPersonFactory.Object);
+            context, _mockLogger.Object, _mockPersonFactory.Object);
 
         var dto = new CreatePersonDto
         {
@@ -95,9 +93,7 @@ public class FamilyMemberServiceTests
         // Arrange
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(
-            context, _mockHtmlSanitizer.Object, _mockLogger.Object, _mockPersonFactory.Object);
-
-        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
+            context, _mockLogger.Object, _mockPersonFactory.Object);
 
         var dto = new CreatePersonDto
         {
@@ -122,9 +118,7 @@ public class FamilyMemberServiceTests
         // Arrange
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(
-            context, _mockHtmlSanitizer.Object, _mockLogger.Object, _mockPersonFactory.Object);
-
-        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
+            context, _mockLogger.Object, _mockPersonFactory.Object);
 
         var dto = new CreatePersonDto
         {
@@ -134,7 +128,7 @@ public class FamilyMemberServiceTests
         };
 
         // Act
-        var (success, person, error) = await service.AddPersonToTreeAsync(1, 1, dto);
+        var (success, person, _) = await service.AddPersonToTreeAsync(1, 1, dto);
 
         // Assert
         Assert.True(success);
@@ -149,9 +143,7 @@ public class FamilyMemberServiceTests
         // Arrange
         var context = TestDbContextFactory.CreateInMemoryDbContext();
         var service = new FamilyMemberService(
-            context, _mockHtmlSanitizer.Object, _mockLogger.Object, _mockPersonFactory.Object);
-
-        var (owner, tree) = await TestDataSeeder.SeedBasicScenarioAsync(context);
+            context, _mockLogger.Object, _mockPersonFactory.Object);
 
         var dto = new CreatePersonDto
         {
@@ -160,7 +152,7 @@ public class FamilyMemberServiceTests
         };
 
         // Act
-        var (success, person, error) = await service.AddPersonToTreeAsync(1, 1, dto);
+        var (success, _, _) = await service.AddPersonToTreeAsync(1, 1, dto);
 
         // Assert
         Assert.True(success);
