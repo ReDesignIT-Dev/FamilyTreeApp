@@ -6,11 +6,13 @@ import {
 import { Edit, Add } from '@mui/icons-material';
 import { FamilyTreeService } from '@/services/api/familyTreeService';
 import type { FamilyTree } from '@/types/familyTree.types';
+import AddMemberDialog from '@/components/familyTree/AddMemberDialog';
 
 export default function FamilyTreeDetailPage() {
   const [tree, setTree] = useState<FamilyTree | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
 
   useEffect(() => {
     FamilyTreeService.getMine()
@@ -19,14 +21,8 @@ export default function FamilyTreeDetailPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleEdit = () => {
-    // TODO: Open edit dialog
-    console.log('Edit tree');
-  };
-
-  const handleAddMember = () => {
-    // TODO: Open add member dialog
-    console.log('Add family member');
+  const handleMemberAdded = () => {
+    // TODO: refresh member list
   };
 
   if (loading) {
@@ -51,27 +47,16 @@ export default function FamilyTreeDetailPage() {
         <Typography variant="h4" component="h1">
           {tree.name}
         </Typography>
-        <Button variant="outlined" startIcon={<Edit />} onClick={handleEdit}>
+        <Button variant="outlined" startIcon={<Edit />}>
           Edit
         </Button>
       </Box>
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            {tree.description || 'No description provided'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Created: {new Date(tree.createdAt).toLocaleDateString()}
-          </Typography>
-        </CardContent>
-      </Card>
-
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">Family Members</Typography>
-            <Button variant="contained" startIcon={<Add />} onClick={handleAddMember}>
+            <Button variant="contained" startIcon={<Add />} onClick={() => setAddMemberOpen(true)}>
               Add Member
             </Button>
           </Box>
@@ -82,6 +67,13 @@ export default function FamilyTreeDetailPage() {
           </Box>
         </CardContent>
       </Card>
+
+      <AddMemberDialog
+        open={addMemberOpen}
+        treeId={tree.id}
+        onClose={() => setAddMemberOpen(false)}
+        onMemberAdded={handleMemberAdded}
+      />
     </Container>
   );
 }

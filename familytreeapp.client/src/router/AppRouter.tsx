@@ -38,8 +38,8 @@ const router = createBrowserRouter([
         errorElement: <NotFoundPage />,
         children: [
             { index: true, element: <HomePage /> },
-            { path: ROUTE_MY_TREE, element: <FamilyTreeDetailPage /> },
-            { path: ROUTE_MEMBER_DETAIL, element: <MemberDetailsPage /> },
+            { path: ROUTE_MY_TREE, element: <PrivateRoute><FamilyTreeDetailPage /></PrivateRoute> },
+            { path: ROUTE_MEMBER_DETAIL, element: <PrivateRoute><MemberDetailsPage /></PrivateRoute> },
             { path: PATH_AUTH_ACTIVATE, element: <Activate /> },
 
             {
