@@ -42,3 +42,12 @@ export interface PersonDto {
   profilePhotoUrl?: string;
   createdAt: string;
 }
+
+export interface PersonSummaryDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+  birthDate?: string;
+  deathDate?: string;
+  profilePhotoUrl?: string;
+}
