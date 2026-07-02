@@ -1,6 +1,9 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".github/copilot-instructions.md" />
+    <File Path=".github/prompts/add-backend-feature.prompt.md" />
+    <File Path=".github/prompts/add-frontend-feature.prompt.md" />
+    <File Path=".github/prompts/add-tests.prompt.md" />
     <File Path=".gitignore" />
   </Folder>
   <Project Path="familytreeapp.client/familytreeapp.client.esproj">
