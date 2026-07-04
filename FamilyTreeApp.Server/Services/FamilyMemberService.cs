@@ -21,6 +21,11 @@ public partial class FamilyMemberService(
         int userId,
         CreatePersonDto dto)
     {
+        // Validate at least one name is provided
+        var nameValidationError = ValidateAtLeastOneName(dto.FirstName, dto.LastName);
+        if (!string.IsNullOrEmpty(nameValidationError))
+            return (false, null, nameValidationError);
+
         var tree = await _context.FamilyTrees
             .FirstOrDefaultAsync(t => t.Id == treeId);
 
@@ -110,6 +115,11 @@ public partial class FamilyMemberService(
         int userId,
         UpdatePersonDto dto)
     {
+        // Validate at least one name is provided
+        var nameValidationError = ValidateAtLeastOneName(dto.FirstName, dto.LastName);
+        if (!string.IsNullOrEmpty(nameValidationError))
+            return (false, null, nameValidationError);
+
         var tree = await _context.FamilyTrees.FindAsync(treeId);
         if (tree == null)
             return (false, null, ServiceErrors.FamilyTreeNotFound);
@@ -166,6 +176,17 @@ public partial class FamilyMemberService(
         LogPersonRemovedFromTree(userId, personId, treeId);
 
         return (true, null);
+    }
+
+    private static string? ValidateAtLeastOneName(string? firstName, string? lastName)
+    {
+        var hasFirstName = !string.IsNullOrWhiteSpace(firstName);
+        var hasLastName = !string.IsNullOrWhiteSpace(lastName);
+
+        if (!hasFirstName && !hasLastName)
+            return "At least one of FirstName or LastName must be provided.";
+
+        return null;
     }
 
     private static PersonDto MapToPersonDto(Person person)

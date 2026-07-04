@@ -17,8 +17,8 @@ const RegisterFormComponent: React.FC = () => {
         passwordConfirm, setPasswordConfirm,
         setIsEmailValid,
         setIsPasswordWithPasswordConfirmValid,
-        setIsValidRecaptchaToken,
         setReCaptchaToken,
+        setIsValidReCaptchaToken,
         loading,
         registrationSuccessful,
         errorMessage,
@@ -84,7 +84,7 @@ const RegisterFormComponent: React.FC = () => {
                     </Box>
                     <RecaptchaField
                         customClasses=""
-                        onValidate={setIsValidRecaptchaToken}
+                        onValidate={setIsValidReCaptchaToken}
                         setReturnToken={setReCaptchaToken}
                     />
                     <Button type="submit" variant="contained" fullWidth>

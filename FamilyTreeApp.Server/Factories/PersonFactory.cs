@@ -15,9 +15,9 @@ public class PersonFactory : IPersonFactory
     {
         return new Person
         {
-            FirstName = dto.FirstName.Trim(),
+            FirstName = dto.FirstName?.Trim(),
             MiddleName = dto.MiddleName?.Trim(),
-            LastName = dto.LastName.Trim(),
+            LastName = dto.LastName?.Trim(),
             MaidenName = dto.MaidenName?.Trim(),
             BirthDate = dto.BirthDate,
             BirthPlace = dto.BirthPlace?.Trim(),
@@ -33,9 +33,9 @@ public class PersonFactory : IPersonFactory
 
     public void ApplyUpdate(Person person, UpdatePersonDto dto)
     {
-        person.FirstName = dto.FirstName.Trim();
+        person.FirstName = dto.FirstName?.Trim();
         person.MiddleName = dto.MiddleName?.Trim();
-        person.LastName = dto.LastName.Trim();
+        person.LastName = dto.LastName?.Trim();
         person.MaidenName = dto.MaidenName?.Trim();
         person.BirthDate = dto.BirthDate;
         person.BirthPlace = dto.BirthPlace?.Trim();

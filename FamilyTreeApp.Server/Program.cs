@@ -16,6 +16,8 @@ using Scalar.AspNetCore;
 using System.Text;
 using FamilyTreeApp.Server.Models.Enums;
 using System.Text.Json.Serialization;
+using FluentValidation;
+using FamilyTreeApp.Server.Validators;
 
 DotNetEnv.Env.Load();
 
@@ -35,6 +37,8 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePersonDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdatePersonDtoValidator>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
@@ -55,6 +59,8 @@ builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IFamilyMemberService, FamilyMemberService>();
 builder.Services.AddScoped<IFamilyTreeService, FamilyTreeService>();
 builder.Services.AddScoped<IPersonFactory, PersonFactory>();
+
+
 
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {

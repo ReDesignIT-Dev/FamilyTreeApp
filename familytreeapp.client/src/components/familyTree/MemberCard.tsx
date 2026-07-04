@@ -14,9 +14,18 @@ function formatDate(dateStr?: string): string | null {
   });
 }
 
+function safeText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export default function MemberCard({ member }: Readonly<Props>) {
   const navigate = useNavigate();
-  const initials = `${member.firstName[0]}${member.lastName[0]}`.toUpperCase();
+
+  const firstName = safeText(member.firstName);
+  const lastName = safeText(member.lastName);
+  const displayName = [firstName, lastName].filter(Boolean).join(' ') || 'Unknown member';
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
+
   const birthDate = formatDate(member.birthDate);
   const deathDate = formatDate(member.deathDate);
 
@@ -34,7 +43,7 @@ export default function MemberCard({ member }: Readonly<Props>) {
 
             <Box flex={1} minWidth={0}>
               <Typography variant="subtitle1" fontWeight={600} noWrap>
-                {member.firstName} {member.lastName}
+                {displayName}
               </Typography>
 
               <Box display="flex" flexDirection="column" gap={0.5} mt={0.5}>
