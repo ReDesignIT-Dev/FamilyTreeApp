@@ -24,11 +24,8 @@ export default function PersonNameFields({
                     value={firstName}
                     onChange={(e) => onChange('firstName', e.target.value)}
                     onBlur={() => onBlur('firstName')}
-                    required
                     fullWidth
                     size="small"
-                    error={showError('firstName', firstName.trim().length === 0)}
-                    helperText={showError('firstName', firstName.trim().length === 0) ? 'First name is required' : ''}
                 />
                 <TextField
                     label="Middle Name"
@@ -44,11 +41,8 @@ export default function PersonNameFields({
                     value={lastName}
                     onChange={(e) => onChange('lastName', e.target.value)}
                     onBlur={() => onBlur('lastName')}
-                    required
                     fullWidth
                     size="small"
-                    error={showError('lastName', lastName.trim().length === 0)}
-                    helperText={showError('lastName', lastName.trim().length === 0) ? 'Last name is required' : ''}
                 />
                 <TextField
                     label="Maiden Name"

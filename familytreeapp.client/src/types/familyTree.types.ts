@@ -12,12 +12,12 @@ export interface UpdateFamilyTreeDto {
   description?: string;
 }
 
-export type Gender = 'Male' | 'Female' | 'Other';
+export type Gender = 'Male' | 'Female';
 
 export interface CreatePersonDto {
-  firstName: string;
+  firstName?: string;
   middleName?: string;
-  lastName: string;
+  lastName?: string;
   maidenName?: string;
   birthDate?: string;
   birthPlace?: string;
@@ -29,9 +29,9 @@ export interface CreatePersonDto {
 
 export interface PersonDto {
   id: number;
-  firstName: string;
+  firstName?: string;
   middleName?: string;
-  lastName: string;
+  lastName?: string;
   maidenName?: string;
   birthDate?: string;
   birthPlace?: string;
@@ -45,8 +45,8 @@ export interface PersonDto {
 
 export interface PersonSummaryDto {
   id: number;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   birthDate?: string;
   deathDate?: string;
   profilePhotoUrl?: string;
