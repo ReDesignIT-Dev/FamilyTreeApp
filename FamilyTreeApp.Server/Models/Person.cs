@@ -3,9 +3,9 @@ namespace FamilyTreeApp.Server.Models;
 public class Person
 {
     public int Id { get; set; }
-    public string? FirstName { get; set; }
+    public string FirstName { get; set; } = string.Empty;
     public string? MiddleName { get; set; }
-    public string? LastName { get; set; }
+    public string LastName { get; set; } = string.Empty;
     public string? MaidenName { get; set; }
     public DateOnly? BirthDate { get; set; }
     public string? BirthPlace { get; set; }
@@ -17,7 +17,7 @@ public class Person
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     // Navigation properties
-    public ICollection<Relationship> ParentRelationships { get; set; } = new List<Relationship>();
-    public ICollection<Relationship> ChildRelationships { get; set; } = new List<Relationship>();
-    public ICollection<Media> MediaFiles { get; set; } = new List<Media>();
+    public ICollection<Relationship> ParentRelationships { get; set; } = [];
+    public ICollection<Relationship> ChildRelationships { get; set; } = [];
+    public ICollection<Media> MediaFiles { get; set; } = [];
 }

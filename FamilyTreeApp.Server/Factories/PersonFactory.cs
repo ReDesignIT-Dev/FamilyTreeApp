@@ -4,20 +4,17 @@ using FamilyTreeApp.Server.Models;
 
 namespace FamilyTreeApp.Server.Factories;
 
-public class PersonFactory : IPersonFactory
+public class PersonFactory(IHtmlSanitizerService htmlSanitizer) : IPersonFactory
 {
-    private readonly IHtmlSanitizerService _htmlSanitizer;
-
-    public PersonFactory(IHtmlSanitizerService htmlSanitizer)
-        => _htmlSanitizer = htmlSanitizer;
+    private readonly IHtmlSanitizerService _htmlSanitizer = htmlSanitizer;
 
     public Person Create(CreatePersonDto dto)
     {
         return new Person
         {
-            FirstName = dto.FirstName?.Trim(),
+            FirstName = dto.FirstName?.Trim() ?? string.Empty,
             MiddleName = dto.MiddleName?.Trim(),
-            LastName = dto.LastName?.Trim(),
+            LastName = dto.LastName?.Trim() ?? string.Empty,
             MaidenName = dto.MaidenName?.Trim(),
             BirthDate = dto.BirthDate,
             BirthPlace = dto.BirthPlace?.Trim(),
@@ -33,9 +30,9 @@ public class PersonFactory : IPersonFactory
 
     public void ApplyUpdate(Person person, UpdatePersonDto dto)
     {
-        person.FirstName = dto.FirstName?.Trim();
+        person.FirstName = dto.FirstName?.Trim() ?? string.Empty;
         person.MiddleName = dto.MiddleName?.Trim();
-        person.LastName = dto.LastName?.Trim();
+        person.LastName = dto.LastName?.Trim() ?? string.Empty;
         person.MaidenName = dto.MaidenName?.Trim();
         person.BirthDate = dto.BirthDate;
         person.BirthPlace = dto.BirthPlace?.Trim();
