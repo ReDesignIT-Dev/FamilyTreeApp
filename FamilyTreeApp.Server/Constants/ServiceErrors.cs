@@ -10,4 +10,5 @@ public static class ServiceErrors
     public const string CannotRemoveOwner = "Cannot remove the owner from their own tree";
     public const string PersonHasRelationships = "Cannot remove person with existing relationships. Remove relationships first.";
     public const string DeathBeforeBirth = "Death date cannot be before birth date";
+    public const string InvalidGender = "Invalid gender. Allowed values: Male, Female.";
 }

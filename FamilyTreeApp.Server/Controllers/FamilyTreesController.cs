@@ -9,14 +9,9 @@ namespace FamilyTreeApp.Server.Controllers;
 [ApiController]
 [Route("api/familytrees")]
 [Authorize(Policy = "ActiveUserOnly")]
-public class FamilyTreesController : ControllerBase
+public class FamilyTreesController(IFamilyTreeService familyTreeService) : ControllerBase
 {
-    private readonly IFamilyTreeService _familyTreeService;
-
-    public FamilyTreesController(IFamilyTreeService familyTreeService)
-    {
-        _familyTreeService = familyTreeService;
-    }
+    private readonly IFamilyTreeService _familyTreeService = familyTreeService;
 
     [HttpGet("my")]
     public async Task<ActionResult<FamilyTreeDto>> GetMyTree()

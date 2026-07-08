@@ -27,6 +27,19 @@ export interface CreatePersonDto {
   biography?: string;
 }
 
+export interface UpdatePersonDto {
+    firstName?: string | null;
+    middleName?: string | null;
+    lastName?: string | null;
+    maidenName?: string | null;
+    birthDate?: string | null;
+    birthPlace?: string | null;
+    deathDate?: string | null;
+    deathPlace?: string | null;
+    gender?: Gender | null;
+    biography?: string | null;
+}
+
 export interface PersonDto {
   id: number;
   firstName?: string;

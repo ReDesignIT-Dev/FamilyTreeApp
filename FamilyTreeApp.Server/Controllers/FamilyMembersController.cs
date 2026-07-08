@@ -1,4 +1,5 @@
 using FamilyTreeApp.Server.Constants;
+using System.Text.Json;
 
 using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
@@ -84,15 +85,15 @@ public class FamilyMembersController(
         return Ok(person);
     }
 
-    // PUT /api/trees/{treeId}/members/{id} - Update person
-    [HttpPut("{id}")]
-    public async Task<ActionResult<PersonDto>> UpdatePerson(int treeId, int id, [FromBody] UpdatePersonDto dto)
+    // PATCH /api/trees/{treeId}/members/{id} - Partial update person
+    [HttpPatch("{id}")]
+    public async Task<ActionResult<PersonDto>> UpdatePerson(int treeId, int id, [FromBody] JsonElement patch)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized();
 
-        var (success, person, error) = await _familyMemberService.UpdatePersonAsync(treeId, id, userId.Value, dto);
+        var (success, person, error) = await _familyMemberService.UpdatePersonAsync(treeId, id, userId.Value, patch);
 
         if (!success)
             return error switch

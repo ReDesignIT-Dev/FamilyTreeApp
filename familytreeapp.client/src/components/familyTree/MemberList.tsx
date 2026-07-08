@@ -4,7 +4,7 @@ import type { PersonSummaryDto } from '@/types/familyTree.types';
 import MemberCard from './MemberCard';
 
 interface Props {
-  members: PersonSummaryDto[];
+  members: readonly PersonSummaryDto[];
 }
 
 export default function MemberList({ members }: Readonly<Props>) {

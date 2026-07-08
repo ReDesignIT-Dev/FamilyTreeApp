@@ -49,7 +49,7 @@ export const loginUser = createAsyncThunk<
     async ({ email, password, recaptchaToken }, { rejectWithValue }) => {
         try {
             const response = await postLogin({ email, password, recaptchaToken });
-            if (response && response.status === 200) {
+            if (response?.status === 200) {
                 const { token, username: responseUsername } = response.data as LoginResponse;
                 setToken(token);
                 const isAdmin = getIsAdminFromJwt(token);

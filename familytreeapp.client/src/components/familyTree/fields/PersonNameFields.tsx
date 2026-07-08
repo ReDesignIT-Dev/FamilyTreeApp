@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function PersonNameFields({
-    firstName, middleName, lastName, maidenName, onChange, onBlur, showError,
+    firstName, middleName, lastName, maidenName, onChange, onBlur,
 }: Readonly<Props>) {
     return (
         <Box display="flex" flexDirection="column" gap={2}>

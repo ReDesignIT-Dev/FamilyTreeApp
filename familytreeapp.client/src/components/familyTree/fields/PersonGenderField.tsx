@@ -8,8 +8,7 @@ interface Props {
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'Male', label: 'Male' },
-  { value: 'Female', label: 'Female' },
-  { value: 'Other', label: 'Other' },
+  { value: 'Female', label: 'Female' }
 ];
 
 export default function PersonGenderField({ value, onChange }: Props) {

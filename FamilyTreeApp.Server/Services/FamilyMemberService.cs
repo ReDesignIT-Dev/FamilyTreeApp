@@ -3,18 +3,22 @@ using FamilyTreeApp.Server.Data;
 using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
+using FamilyTreeApp.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace FamilyTreeApp.Server.Services;
 
 public partial class FamilyMemberService(
     FamilyTreeContext context,
     ILogger<FamilyMemberService> logger,
-    IPersonFactory personFactory) : IFamilyMemberService
+    IPersonFactory personFactory,
+    IHtmlSanitizerService htmlSanitizerService) : IFamilyMemberService
 {
     private readonly FamilyTreeContext _context = context;
     private readonly ILogger<FamilyMemberService> _logger = logger;
     private readonly IPersonFactory _personFactory = personFactory;
+    private readonly IHtmlSanitizerService _htmlSanitizerService = htmlSanitizerService;
 
     public async Task<(bool Success, Person? Person, string? Error)> AddPersonToTreeAsync(
         int treeId,
@@ -25,6 +29,12 @@ public partial class FamilyMemberService(
         var nameValidationError = ValidateAtLeastOneName(dto.FirstName, dto.LastName);
         if (!string.IsNullOrEmpty(nameValidationError))
             return (false, null, nameValidationError);
+
+        var normalizedCreateGender = NormalizeGenderOrNull(dto.Gender, out var createGenderError);
+        if (!string.IsNullOrEmpty(createGenderError))
+            return (false, null, createGenderError);
+
+        dto.Gender = normalizedCreateGender;
 
         var tree = await _context.FamilyTrees
             .FirstOrDefaultAsync(t => t.Id == treeId);
@@ -109,43 +119,6 @@ public partial class FamilyMemberService(
         return (true, MapToPersonDto(person), null);
     }
 
-    public async Task<(bool Success, PersonDto? Person, string? Error)> UpdatePersonAsync(
-        int treeId,
-        int personId,
-        int userId,
-        UpdatePersonDto dto)
-    {
-        // Validate at least one name is provided
-        var nameValidationError = ValidateAtLeastOneName(dto.FirstName, dto.LastName);
-        if (!string.IsNullOrEmpty(nameValidationError))
-            return (false, null, nameValidationError);
-
-        var tree = await _context.FamilyTrees.FindAsync(treeId);
-        if (tree == null)
-            return (false, null, ServiceErrors.FamilyTreeNotFound);
-
-        var treeMember = await _context.TreeMembers
-            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
-
-        if (treeMember == null)
-            return (false, null, ServiceErrors.PersonNotFoundInTree);
-
-        var person = await _context.People.FindAsync(personId);
-        if (person == null)
-            return (false, null, ServiceErrors.PersonNotFound);
-
-        _personFactory.ApplyUpdate(person, dto);
-
-        if (person.DeathDate.HasValue && person.BirthDate.HasValue && person.DeathDate < person.BirthDate)
-            return (false, null, ServiceErrors.DeathBeforeBirth);
-
-        await _context.SaveChangesAsync();
-
-        LogPersonUpdated(userId, personId, treeId);
-
-        return (true, MapToPersonDto(person), null);
-    }
-
     public async Task<(bool Success, string? Error)> RemovePersonFromTreeAsync(
         int treeId,
         int personId,
@@ -176,6 +149,77 @@ public partial class FamilyMemberService(
         LogPersonRemovedFromTree(userId, personId, treeId);
 
         return (true, null);
+    }
+
+    public async Task<(bool Success, PersonDto? Person, string? Error)> UpdatePersonAsync(
+        int treeId,
+        int personId,
+        int userId,
+        JsonElement patch)
+    {
+        var tree = await _context.FamilyTrees.FindAsync(treeId);
+        if (tree == null) return (false, null, ServiceErrors.FamilyTreeNotFound);
+
+        var treeMember = await _context.TreeMembers.FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
+        if (treeMember == null) return (false, null, ServiceErrors.PersonNotFoundInTree);
+
+        var person = await _context.People.FindAsync(personId);
+        if (person == null) return (false, null, ServiceErrors.PersonNotFound);
+
+        if (patch.TryGetProperty("firstName", out var firstNameProp))
+            person.FirstName = firstNameProp.ValueKind == JsonValueKind.Null ? string.Empty : (firstNameProp.GetString()?.Trim() ?? string.Empty);
+
+        if (patch.TryGetProperty("middleName", out var middleNameProp))
+            person.MiddleName = middleNameProp.ValueKind == JsonValueKind.Null ? null : middleNameProp.GetString()?.Trim();
+
+        if (patch.TryGetProperty("lastName", out var lastNameProp))
+            person.LastName = lastNameProp.ValueKind == JsonValueKind.Null ? string.Empty : (lastNameProp.GetString()?.Trim() ?? string.Empty);
+
+        if (patch.TryGetProperty("maidenName", out var maidenNameProp))
+            person.MaidenName = maidenNameProp.ValueKind == JsonValueKind.Null ? null : maidenNameProp.GetString()?.Trim();
+
+        if (patch.TryGetProperty("birthPlace", out var birthPlaceProp))
+            person.BirthPlace = birthPlaceProp.ValueKind == JsonValueKind.Null ? null : birthPlaceProp.GetString()?.Trim();
+
+        if (patch.TryGetProperty("deathPlace", out var deathPlaceProp))
+            person.DeathPlace = deathPlaceProp.ValueKind == JsonValueKind.Null ? null : deathPlaceProp.GetString()?.Trim();
+
+        if (patch.TryGetProperty("gender", out var genderProp))
+        {
+            if (genderProp.ValueKind == JsonValueKind.Null)
+            {
+                person.Gender = null;
+            }
+            else
+            {
+                var normalizedGender = NormalizeGenderOrNull(genderProp.GetString(), out var genderError);
+                if (!string.IsNullOrEmpty(genderError))
+                    return (false, null, genderError);
+
+                person.Gender = normalizedGender;
+            }
+        }
+
+        if (patch.TryGetProperty("biography", out var bioProp))
+            person.Biography = bioProp.ValueKind == JsonValueKind.Null ? null : _htmlSanitizerService.Sanitize(bioProp.GetString() ?? string.Empty);
+
+        if (patch.TryGetProperty("birthDate", out var birthDateProp))
+            person.BirthDate = birthDateProp.ValueKind == JsonValueKind.Null ? null : DateOnly.Parse(birthDateProp.GetString()!);
+
+        if (patch.TryGetProperty("deathDate", out var deathDateProp))
+            person.DeathDate = deathDateProp.ValueKind == JsonValueKind.Null ? null : DateOnly.Parse(deathDateProp.GetString()!);
+
+        var nameValidationError = ValidateAtLeastOneName(person.FirstName, person.LastName);
+        if (!string.IsNullOrEmpty(nameValidationError))
+            return (false, null, nameValidationError);
+
+        if (person.DeathDate.HasValue && person.BirthDate.HasValue && person.DeathDate < person.BirthDate)
+            return (false, null, ServiceErrors.DeathBeforeBirth);
+
+        await _context.SaveChangesAsync();
+        LogPersonUpdated(userId, personId, treeId);
+
+        return (true, MapToPersonDto(person), null);
     }
 
     private static string? ValidateAtLeastOneName(string? firstName, string? lastName)
@@ -220,5 +264,23 @@ public partial class FamilyMemberService(
             DeathDate = person.DeathDate,
             ProfilePhotoUrl = person.ProfilePhotoUrl
         };
+    }
+
+    private static string? NormalizeGenderOrNull(string? gender, out string? error)
+    {
+        if (string.IsNullOrWhiteSpace(gender))
+        {
+            error = null;
+            return null;
+        }
+
+        if (Enum.TryParse<Gender>(gender.Trim(), ignoreCase: true, out var parsedGender))
+        {
+            error = null;
+            return parsedGender.ToString();
+        }
+
+        error = ServiceErrors.InvalidGender;
+        return null;
     }
 }
