@@ -5,6 +5,7 @@ using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
 using FamilyTreeApp.Server.Models.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using System.Text.Json;
 
 namespace FamilyTreeApp.Server.Services;
@@ -42,6 +43,9 @@ public partial class FamilyMemberService(
         if (tree == null)
             return (false, null, ServiceErrors.FamilyTreeNotFound);
 
+        if (tree.OwnerId != userId)
+            return (false, null, ServiceErrors.NoEditPermission);
+
         if (dto.DeathDate.HasValue && dto.BirthDate.HasValue && dto.DeathDate < dto.BirthDate)
             return (false, null, ServiceErrors.DeathBeforeBirth);
 
@@ -77,6 +81,9 @@ public partial class FamilyMemberService(
         if (tree == null)
             return (false, null, ServiceErrors.FamilyTreeNotFound);
 
+        if (tree.OwnerId != userId)
+            return (false, null, ServiceErrors.NoAccessPermission);
+
         var members = tree.Members
             .Select(tm => MapToPersonSummaryDto(tm.Person))
             .OrderBy(p => p.LastName)
@@ -98,6 +105,9 @@ public partial class FamilyMemberService(
         if (tree == null)
             return (false, null, ServiceErrors.FamilyTreeNotFound);
 
+        if (tree.OwnerId != userId)
+            return (false, null, ServiceErrors.NoAccessPermission);
+
         var treeMember = await _context.TreeMembers
             .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
 
@@ -106,11 +116,6 @@ public partial class FamilyMemberService(
 
         var person = await _context.People
             .AsNoTracking()
-            .Include(p => p.ParentRelationships)
-                .ThenInclude(r => r.Child)
-            .Include(p => p.ChildRelationships)
-                .ThenInclude(r => r.Parent)
-            .Include(p => p.MediaFiles)
             .FirstOrDefaultAsync(p => p.Id == personId);
 
         if (person == null)
@@ -127,6 +132,9 @@ public partial class FamilyMemberService(
         var tree = await _context.FamilyTrees.FindAsync(treeId);
         if (tree == null)
             return (false, ServiceErrors.FamilyTreeNotFound);
+
+        if (tree.OwnerId != userId)
+            return (false, ServiceErrors.NoEditPermission);
 
         if (tree.OwnerPersonId == personId)
             return (false, ServiceErrors.CannotRemoveOwner);
@@ -157,69 +165,139 @@ public partial class FamilyMemberService(
         int userId,
         JsonElement patch)
     {
-        var tree = await _context.FamilyTrees.FindAsync(treeId);
-        if (tree == null) return (false, null, ServiceErrors.FamilyTreeNotFound);
+        var loadResult = await GetEditablePersonForUpdateAsync(treeId, personId, userId);
+        if (!loadResult.Success)
+            return (false, null, loadResult.Error);
 
-        var treeMember = await _context.TreeMembers.FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
-        if (treeMember == null) return (false, null, ServiceErrors.PersonNotFoundInTree);
+        var person = loadResult.Person!;
 
-        var person = await _context.People.FindAsync(personId);
-        if (person == null) return (false, null, ServiceErrors.PersonNotFound);
+        var patchError = ApplyPersonPatch(person, patch);
+        if (!string.IsNullOrEmpty(patchError))
+            return (false, null, patchError);
 
-        if (patch.TryGetProperty("firstName", out var firstNameProp))
-            person.FirstName = firstNameProp.ValueKind == JsonValueKind.Null ? string.Empty : (firstNameProp.GetString()?.Trim() ?? string.Empty);
-
-        if (patch.TryGetProperty("middleName", out var middleNameProp))
-            person.MiddleName = middleNameProp.ValueKind == JsonValueKind.Null ? null : middleNameProp.GetString()?.Trim();
-
-        if (patch.TryGetProperty("lastName", out var lastNameProp))
-            person.LastName = lastNameProp.ValueKind == JsonValueKind.Null ? string.Empty : (lastNameProp.GetString()?.Trim() ?? string.Empty);
-
-        if (patch.TryGetProperty("maidenName", out var maidenNameProp))
-            person.MaidenName = maidenNameProp.ValueKind == JsonValueKind.Null ? null : maidenNameProp.GetString()?.Trim();
-
-        if (patch.TryGetProperty("birthPlace", out var birthPlaceProp))
-            person.BirthPlace = birthPlaceProp.ValueKind == JsonValueKind.Null ? null : birthPlaceProp.GetString()?.Trim();
-
-        if (patch.TryGetProperty("deathPlace", out var deathPlaceProp))
-            person.DeathPlace = deathPlaceProp.ValueKind == JsonValueKind.Null ? null : deathPlaceProp.GetString()?.Trim();
-
-        if (patch.TryGetProperty("gender", out var genderProp))
-        {
-            if (genderProp.ValueKind == JsonValueKind.Null)
-            {
-                person.Gender = null;
-            }
-            else
-            {
-                var normalizedGender = NormalizeGenderOrNull(genderProp.GetString(), out var genderError);
-                if (!string.IsNullOrEmpty(genderError))
-                    return (false, null, genderError);
-
-                person.Gender = normalizedGender;
-            }
-        }
-
-        if (patch.TryGetProperty("biography", out var bioProp))
-            person.Biography = bioProp.ValueKind == JsonValueKind.Null ? null : _htmlSanitizerService.Sanitize(bioProp.GetString() ?? string.Empty);
-
-        if (patch.TryGetProperty("birthDate", out var birthDateProp))
-            person.BirthDate = birthDateProp.ValueKind == JsonValueKind.Null ? null : DateOnly.Parse(birthDateProp.GetString()!);
-
-        if (patch.TryGetProperty("deathDate", out var deathDateProp))
-            person.DeathDate = deathDateProp.ValueKind == JsonValueKind.Null ? null : DateOnly.Parse(deathDateProp.GetString()!);
-
-        var nameValidationError = ValidateAtLeastOneName(person.FirstName, person.LastName);
-        if (!string.IsNullOrEmpty(nameValidationError))
-            return (false, null, nameValidationError);
-
-        if (person.DeathDate.HasValue && person.BirthDate.HasValue && person.DeathDate < person.BirthDate)
-            return (false, null, ServiceErrors.DeathBeforeBirth);
+        var validationError = ValidatePersonAfterPatch(person);
+        if (!string.IsNullOrEmpty(validationError))
+            return (false, null, validationError);
 
         await _context.SaveChangesAsync();
         LogPersonUpdated(userId, personId, treeId);
 
         return (true, MapToPersonDto(person), null);
+    }
+
+    private async Task<(bool Success, Person? Person, string? Error)> GetEditablePersonForUpdateAsync(
+        int treeId,
+        int personId,
+        int userId)
+    {
+        var tree = await _context.FamilyTrees.FindAsync(treeId);
+        if (tree == null)
+            return (false, null, ServiceErrors.FamilyTreeNotFound);
+
+        if (tree.OwnerId != userId)
+            return (false, null, ServiceErrors.NoEditPermission);
+
+        var treeMember = await _context.TreeMembers
+            .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
+        if (treeMember == null)
+            return (false, null, ServiceErrors.PersonNotFoundInTree);
+
+        var person = await _context.People.FindAsync(personId);
+        if (person == null)
+            return (false, null, ServiceErrors.PersonNotFound);
+
+        return (true, person, null);
+    }
+
+    private string? ApplyPersonPatch(Person person, JsonElement patch)
+    {
+        ApplyRequiredStringPatch(patch, "firstName", value => person.FirstName = value ?? string.Empty);
+        ApplyOptionalStringPatch(patch, "middleName", value => person.MiddleName = value);
+        ApplyRequiredStringPatch(patch, "lastName", value => person.LastName = value ?? string.Empty);
+        ApplyOptionalStringPatch(patch, "maidenName", value => person.MaidenName = value);
+        ApplyOptionalStringPatch(patch, "birthPlace", value => person.BirthPlace = value);
+        ApplyOptionalStringPatch(patch, "deathPlace", value => person.DeathPlace = value);
+
+        var genderError = ApplyGenderPatch(patch, person);
+        if (!string.IsNullOrEmpty(genderError))
+            return genderError;
+
+        ApplyBiographyPatch(patch, person);
+        ApplyDatePatch(patch, "birthDate", value => person.BirthDate = value);
+        ApplyDatePatch(patch, "deathDate", value => person.DeathDate = value);
+
+        return null;
+    }
+
+    private static string? ValidatePersonAfterPatch(Person person)
+    {
+        var nameValidationError = ValidateAtLeastOneName(person.FirstName, person.LastName);
+        if (!string.IsNullOrEmpty(nameValidationError))
+            return nameValidationError;
+
+        if (person.DeathDate.HasValue && person.BirthDate.HasValue && person.DeathDate < person.BirthDate)
+            return ServiceErrors.DeathBeforeBirth;
+
+        return null;
+    }
+
+    private static void ApplyRequiredStringPatch(JsonElement patch, string propertyName, Action<string?> assign)
+    {
+        if (!patch.TryGetProperty(propertyName, out var property))
+            return;
+
+        if (property.ValueKind == JsonValueKind.Null)
+        {
+            assign(null);
+            return;
+        }
+
+        assign(property.GetString()?.Trim());
+    }
+
+    private static void ApplyOptionalStringPatch(JsonElement patch, string propertyName, Action<string?> assign)
+    {
+        if (!patch.TryGetProperty(propertyName, out var property))
+            return;
+
+        assign(property.ValueKind == JsonValueKind.Null ? null : property.GetString()?.Trim());
+    }
+
+    private static string? ApplyGenderPatch(JsonElement patch, Person person)
+    {
+        if (!patch.TryGetProperty("gender", out var genderProp))
+            return null;
+
+        if (genderProp.ValueKind == JsonValueKind.Null)
+        {
+            person.Gender = null;
+            return null;
+        }
+
+        var normalizedGender = NormalizeGenderOrNull(genderProp.GetString(), out var genderError);
+        if (!string.IsNullOrEmpty(genderError))
+            return genderError;
+
+        person.Gender = normalizedGender;
+        return null;
+    }
+
+    private void ApplyBiographyPatch(JsonElement patch, Person person)
+    {
+        if (!patch.TryGetProperty("biography", out var bioProp))
+            return;
+
+        person.Biography = bioProp.ValueKind == JsonValueKind.Null
+            ? null
+            : _htmlSanitizerService.Sanitize(bioProp.GetString() ?? string.Empty);
+    }
+
+    private static void ApplyDatePatch(JsonElement patch, string propertyName, Action<DateOnly?> assign)
+    {
+        if (!patch.TryGetProperty(propertyName, out var property))
+            return;
+
+        assign(property.ValueKind == JsonValueKind.Null ? null : DateOnly.Parse(property.GetString()!, CultureInfo.CurrentCulture));
     }
 
     private static string? ValidateAtLeastOneName(string? firstName, string? lastName)

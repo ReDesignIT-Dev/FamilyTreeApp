@@ -31,7 +31,7 @@ public class FamilyMembersController(
             return error switch
             {
                 ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
-                "You don't have permission to edit this tree" => Forbid(),
+                ServiceErrors.NoAccessPermission => Forbid(),
                 _ => BadRequest(new { message = error })
             };
 
@@ -76,9 +76,9 @@ public class FamilyMembersController(
             return error switch
             {
                 ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
-                "Person not found in this tree" => NotFound(new { message = error }),
-                "Person not found" => NotFound(new { message = error }),
-                "You don't have access to this tree" => Forbid(),
+                ServiceErrors.PersonNotFoundInTree => NotFound(new { message = error }),
+                ServiceErrors.PersonNotFound => NotFound(new { message = error }),
+                ServiceErrors.NoAccessPermission => Forbid(),
                 _ => BadRequest(new { message = error })
             };
 
@@ -99,9 +99,9 @@ public class FamilyMembersController(
             return error switch
             {
                 ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
-                "Person not found in this tree" => NotFound(new { message = error }),
-                "Person not found" => NotFound(new { message = error }),
-                "You don't have permission to edit this tree" => Forbid(),
+                ServiceErrors.PersonNotFoundInTree => NotFound(new { message = error }),
+                ServiceErrors.PersonNotFound => NotFound(new { message = error }),
+                ServiceErrors.NoAccessPermission => Forbid(),
                 _ => BadRequest(new { message = error })
             };
 
@@ -122,8 +122,8 @@ public class FamilyMembersController(
             return error switch
             {
                 ServiceErrors.FamilyTreeNotFound => NotFound(new { message = error }),
-                "Person not found in this tree" => NotFound(new { message = error }),
-                "You don't have permission to edit this tree" => Forbid(),
+                ServiceErrors.PersonNotFoundInTree => NotFound(new { message = error }),
+                ServiceErrors.NoAccessPermission => Forbid(),
                 _ => BadRequest(new { message = error })
             };
 
