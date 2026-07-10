@@ -1,3 +1,5 @@
+using FamilyTreeApp.Server.Models.Enums;
+
 namespace FamilyTreeApp.Server.Dtos.Person;
 
 public class UpdatePersonDto
@@ -10,6 +12,6 @@ public class UpdatePersonDto
     public string? BirthPlace { get; set; }
     public DateOnly? DeathDate { get; set; }
     public string? DeathPlace { get; set; }
-    public string? Gender { get; set; }
+    public Gender? Gender { get; set; }
     public string? Biography { get; set; }
 }

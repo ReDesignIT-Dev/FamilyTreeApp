@@ -40,5 +40,9 @@ public class FamilyTreeContext(DbContextOptions<FamilyTreeContext> options) : Id
             .WithMany(p => p.ChildRelationships)
             .HasForeignKey(r => r.ChildId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Person>()
+            .Property(p => p.Gender)
+            .HasDefaultValue(Gender.Male);
     }
 }

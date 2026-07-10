@@ -26,7 +26,7 @@ public class CreatePersonDtoValidator : AbstractValidator<CreatePersonDto>
             .MaximumLength(200);
 
         RuleFor(x => x.Gender)
-            .MaximumLength(20);
+            .IsInEnum();
 
         RuleFor(x => x.Biography)
             .MaximumLength(5000);
@@ -35,7 +35,7 @@ public class CreatePersonDtoValidator : AbstractValidator<CreatePersonDto>
         RuleFor(x => x)
             .Custom((dto, context) =>
             {
-                if (string.IsNullOrWhiteSpace(dto.FirstName) && 
+                if (string.IsNullOrWhiteSpace(dto.FirstName) &&
                     string.IsNullOrWhiteSpace(dto.LastName))
                 {
                     context.AddFailure("At least one of FirstName or LastName must be provided.");

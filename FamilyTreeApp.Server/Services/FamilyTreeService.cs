@@ -3,26 +3,16 @@ using FamilyTreeApp.Server.Dtos.FamilyTree;
 using FamilyTreeApp.Server.Dtos.User;
 using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace FamilyTreeApp.Server.Services;
 
-public class FamilyTreeService : IFamilyTreeService
+public partial class FamilyTreeService(
+    FamilyTreeContext context,
+    ILogger<FamilyTreeService> logger) : IFamilyTreeService
 {
-    private readonly FamilyTreeContext _context;
-    private readonly UserManager<User> _userManager;
-    private readonly ILogger<FamilyTreeService> _logger;
-
-    public FamilyTreeService(
-        FamilyTreeContext context,
-        UserManager<User> userManager,
-        ILogger<FamilyTreeService> logger)
-    {
-        _context = context;
-        _userManager = userManager;
-        _logger = logger;
-    }
+    private readonly FamilyTreeContext _context = context;
+    private readonly ILogger<FamilyTreeService> _logger = logger;
 
     public async Task CreateDefaultTreeAsync(int userId, RegisterDto dto)
     {
@@ -30,7 +20,7 @@ public class FamilyTreeService : IFamilyTreeService
         {
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            Gender = dto.Gender.ToString(),
+            Gender = dto.Gender,
             BirthDate = dto.DateOfBirth,
             CreatedAt = DateTime.UtcNow
         };
@@ -50,7 +40,7 @@ public class FamilyTreeService : IFamilyTreeService
         _context.TreeMembers.Add(new TreeMember { FamilyTreeId = tree.Id, PersonId = person.Id });
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Default family tree created for user {UserId}", userId);
+        LogDefaultTreeCreated(userId);
     }
 
     public async Task<(bool Success, FamilyTreeDto? Tree, string? Error)> GetUserTreeAsync(int userId)
@@ -82,7 +72,7 @@ public class FamilyTreeService : IFamilyTreeService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("User {UserId} updated their family tree", userId);
+        LogUserTreeUpdated(userId);
 
         return (true, MapToDto(tree), null);
     }

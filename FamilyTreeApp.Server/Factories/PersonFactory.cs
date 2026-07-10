@@ -1,6 +1,7 @@
 using FamilyTreeApp.Server.Dtos.Person;
 using FamilyTreeApp.Server.Interfaces;
 using FamilyTreeApp.Server.Models;
+using FamilyTreeApp.Server.Models.Enums;
 
 namespace FamilyTreeApp.Server.Factories;
 
@@ -20,7 +21,7 @@ public class PersonFactory(IHtmlSanitizerService htmlSanitizer) : IPersonFactory
             BirthPlace = dto.BirthPlace?.Trim(),
             DeathDate = dto.DeathDate,
             DeathPlace = dto.DeathPlace?.Trim(),
-            Gender = dto.Gender?.Trim(),
+            Gender = dto.Gender,
             Biography = !string.IsNullOrWhiteSpace(dto.Biography)
                 ? _htmlSanitizer.Sanitize(dto.Biography)
                 : null,
@@ -38,7 +39,7 @@ public class PersonFactory(IHtmlSanitizerService htmlSanitizer) : IPersonFactory
         person.BirthPlace = dto.BirthPlace?.Trim();
         person.DeathDate = dto.DeathDate;
         person.DeathPlace = dto.DeathPlace?.Trim();
-        person.Gender = dto.Gender?.Trim();
+        person.Gender = dto.Gender ?? Gender.Male;
         person.Biography = !string.IsNullOrWhiteSpace(dto.Biography)
             ? _htmlSanitizer.Sanitize(dto.Biography)
             : null;

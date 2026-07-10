@@ -6,30 +6,20 @@ using System.Net;
 
 namespace FamilyTreeApp.Server.Services;
 
-public class RegistrationService : IRegistrationService
+public partial class RegistrationService(
+    IUserService userService,
+    IFamilyTreeService familyTreeService,
+    IEmailService emailService,
+    UserManager<User> userManager,
+    IConfiguration config,
+    ILogger<RegistrationService> logger) : IRegistrationService
 {
-    private readonly IUserService _userService;
-    private readonly IFamilyTreeService _familyTreeService;
-    private readonly IEmailService _emailService;
-    private readonly UserManager<User> _userManager;
-    private readonly IConfiguration _config;
-    private readonly ILogger<RegistrationService> _logger;
-
-    public RegistrationService(
-        IUserService userService,
-        IFamilyTreeService familyTreeService,
-        IEmailService emailService,
-        UserManager<User> userManager,
-        IConfiguration config,
-        ILogger<RegistrationService> logger)
-    {
-        _userService = userService;
-        _familyTreeService = familyTreeService;
-        _emailService = emailService;
-        _userManager = userManager;
-        _config = config;
-        _logger = logger;
-    }
+    private readonly IUserService _userService = userService;
+    private readonly IFamilyTreeService _familyTreeService = familyTreeService;
+    private readonly IEmailService _emailService = emailService;
+    private readonly UserManager<User> _userManager = userManager;
+    private readonly IConfiguration _config = config;
+    private readonly ILogger<RegistrationService> _logger = logger;
 
     public async Task<(bool Success, string? Error)> RegisterAsync(RegisterDto dto)
     {
@@ -53,7 +43,7 @@ public class RegistrationService : IRegistrationService
 
             await _emailService.SendAsync(user.Email!, subject, body);
 
-            _logger.LogInformation("User {UserId} registered successfully", user.Id);
+            LogUserRegistered(user.Id);
             return (true, null);
         }
         catch (Exception ex)

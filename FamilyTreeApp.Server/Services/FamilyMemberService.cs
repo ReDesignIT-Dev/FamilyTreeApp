@@ -31,12 +31,6 @@ public partial class FamilyMemberService(
         if (!string.IsNullOrEmpty(nameValidationError))
             return (false, null, nameValidationError);
 
-        var normalizedCreateGender = NormalizeGenderOrNull(dto.Gender, out var createGenderError);
-        if (!string.IsNullOrEmpty(createGenderError))
-            return (false, null, createGenderError);
-
-        dto.Gender = normalizedCreateGender;
-
         var tree = await _context.FamilyTrees
             .FirstOrDefaultAsync(t => t.Id == treeId);
 
@@ -218,15 +212,42 @@ public partial class FamilyMemberService(
         ApplyOptionalStringPatch(patch, "birthPlace", value => person.BirthPlace = value);
         ApplyOptionalStringPatch(patch, "deathPlace", value => person.DeathPlace = value);
 
-        var genderError = ApplyGenderPatch(patch, person);
-        if (!string.IsNullOrEmpty(genderError))
-            return genderError;
+        ApplyGenderPatch(patch, person);
 
         ApplyBiographyPatch(patch, person);
         ApplyDatePatch(patch, "birthDate", value => person.BirthDate = value);
         ApplyDatePatch(patch, "deathDate", value => person.DeathDate = value);
 
         return null;
+    }
+
+    private static void ApplyGenderPatch(JsonElement patch, Person person)
+    {
+        if (!patch.TryGetProperty("gender", out var genderProp))
+            return;
+
+        if (genderProp.ValueKind == JsonValueKind.Null)
+        {
+            person.Gender = Gender.Male;
+            return;
+        }
+
+        if (genderProp.ValueKind == JsonValueKind.String &&
+            Enum.TryParse<Gender>(genderProp.GetString(), ignoreCase: true, out var parsed))
+        {
+            person.Gender = parsed;
+            return;
+        }
+
+        if (genderProp.ValueKind == JsonValueKind.Number &&
+            genderProp.TryGetInt32(out var numeric) &&
+            Enum.IsDefined(typeof(Gender), numeric))
+        {
+            person.Gender = (Gender)numeric;
+            return;
+        }
+
+        person.Gender = Gender.Male;
     }
 
     private static string? ValidatePersonAfterPatch(Person person)
@@ -261,25 +282,6 @@ public partial class FamilyMemberService(
             return;
 
         assign(property.ValueKind == JsonValueKind.Null ? null : property.GetString()?.Trim());
-    }
-
-    private static string? ApplyGenderPatch(JsonElement patch, Person person)
-    {
-        if (!patch.TryGetProperty("gender", out var genderProp))
-            return null;
-
-        if (genderProp.ValueKind == JsonValueKind.Null)
-        {
-            person.Gender = null;
-            return null;
-        }
-
-        var normalizedGender = NormalizeGenderOrNull(genderProp.GetString(), out var genderError);
-        if (!string.IsNullOrEmpty(genderError))
-            return genderError;
-
-        person.Gender = normalizedGender;
-        return null;
     }
 
     private void ApplyBiographyPatch(JsonElement patch, Person person)
@@ -342,23 +344,5 @@ public partial class FamilyMemberService(
             DeathDate = person.DeathDate,
             ProfilePhotoUrl = person.ProfilePhotoUrl
         };
-    }
-
-    private static string? NormalizeGenderOrNull(string? gender, out string? error)
-    {
-        if (string.IsNullOrWhiteSpace(gender))
-        {
-            error = null;
-            return null;
-        }
-
-        if (Enum.TryParse<Gender>(gender.Trim(), ignoreCase: true, out var parsedGender))
-        {
-            error = null;
-            return parsedGender.ToString();
-        }
-
-        error = ServiceErrors.InvalidGender;
-        return null;
     }
 }

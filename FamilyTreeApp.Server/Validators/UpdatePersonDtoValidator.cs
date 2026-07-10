@@ -26,7 +26,8 @@ public class UpdatePersonDtoValidator : AbstractValidator<UpdatePersonDto>
             .MaximumLength(200);
 
         RuleFor(x => x.Gender)
-            .MaximumLength(20);
+            .IsInEnum()
+            .When(x => x.Gender.HasValue);
 
         RuleFor(x => x.Biography)
             .MaximumLength(5000);

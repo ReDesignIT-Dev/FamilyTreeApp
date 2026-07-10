@@ -1,3 +1,5 @@
+using FamilyTreeApp.Server.Models.Enums;
+
 namespace FamilyTreeApp.Server.Models;
 
 public class Person
@@ -11,7 +13,7 @@ public class Person
     public string? BirthPlace { get; set; }
     public DateOnly? DeathDate { get; set; }
     public string? DeathPlace { get; set; }
-    public string? Gender { get; set; } // "Male", "Female", "Other"
+    public Gender Gender { get; set; } = Gender.Male;   
     public string? Biography { get; set; } // Rich text
     public string? ProfilePhotoUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

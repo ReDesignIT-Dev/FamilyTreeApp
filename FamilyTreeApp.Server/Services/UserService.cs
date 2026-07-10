@@ -8,29 +8,18 @@ using System.Security.Cryptography;
 
 namespace FamilyTreeApp.Server.Services;
 
-public class UserService : IUserService
+public class UserService(
+    UserManager<User> userManager,
+    SignInManager<User> signInManager,
+    FamilyTreeContext dbContext,
+    ITokenService tokenService,
+    IUserRoleService userRoleService) : IUserService
 {
-    private readonly UserManager<User> _userManager;
-    private readonly SignInManager<User> _signInManager;
-    private readonly FamilyTreeContext _dbContext;
-    private readonly ITokenService _tokenService;
-    private readonly IUserRoleService _userRoleService;
-
-    public UserService(
-        UserManager<User> userManager,
-        SignInManager<User> signInManager,
-        FamilyTreeContext dbContext,
-        ITokenService tokenService,
-        IUserRoleService userRoleService)
-    {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _dbContext = dbContext;
-        _tokenService = tokenService;
-        _userRoleService = userRoleService;
-
-
-    }
+    private readonly UserManager<User> _userManager = userManager;
+    private readonly SignInManager<User> _signInManager = signInManager;
+    private readonly FamilyTreeContext _dbContext = dbContext;
+    private readonly ITokenService _tokenService = tokenService;
+    private readonly IUserRoleService _userRoleService = userRoleService;
 
     public async Task<UserDto?> RegisterAsync(RegisterDto dto)
     {
@@ -135,18 +124,18 @@ public class UserService : IUserService
         };
     }
 
-    public async Task<bool> UserExistsAsync(string email)
+    public async Task<bool> UserExistsAsync(string username)
     {
-        return await _userManager.FindByEmailAsync(email) != null;
+        return await _userManager.FindByEmailAsync(username) != null;
     }
 
     public async Task<List<AdminUserDto>> GetAllUsersWithRolesAsync()
     {
-        var users = _userManager.Users.ToList();
+        var users = await _userManager.Users.ToListAsync();
         var result = new List<AdminUserDto>();
 
         foreach (var user in users)
-        {
+        {   
             var roles = await _userRoleService.GetUserRolesAsync(user.Id);
             result.Add(new AdminUserDto
             {
@@ -156,7 +145,7 @@ public class UserService : IUserService
                 IsActive = user.IsActive,
                 CreatedAt = user.CreatedAt,
                 EmailConfirmed = user.EmailConfirmed,
-                Roles = roles.ToList()
+                Roles = [.. roles]
             });
         }
         return result;
