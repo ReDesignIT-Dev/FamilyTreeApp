@@ -13,5 +13,5 @@ public class FamilyTree
     public DateTime? UpdatedAt { get; set; }
 
     // Navigation properties
-    public ICollection<TreeMember> Members { get; set; } = new List<TreeMember>();
+    public ICollection<TreeMember> Members { get; set; } = [];
 }
