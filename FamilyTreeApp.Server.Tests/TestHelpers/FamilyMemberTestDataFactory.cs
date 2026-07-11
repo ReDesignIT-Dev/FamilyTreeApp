@@ -19,26 +19,30 @@ public static class FamilyMemberTestDataFactory
     public static CreatePersonDto CreateCreatePersonDto(
         string? firstName = "John",
         string? lastName = "Doe",
-        Gender gender = Gender.Male)
+        Gender gender = Gender.Male,
+        DateOnly? birthDate = null,
+        DateOnly? deathDate = null)
     {
         return new CreatePersonDto
         {
             FirstName = firstName,
             LastName = lastName,
-            Gender = gender
+            Gender = gender,
+            BirthDate = birthDate,
+            DeathDate = deathDate
         };
     }
 
     public static Person CreatePersonEntity(
         string? firstName = "John",
         string? lastName = "Doe",
-        Gender? gender = Gender.Male)
+        Gender gender = Gender.Male)
     {
         return new Person
         {
             FirstName = firstName ?? string.Empty,
             LastName = lastName ?? string.Empty,
-            Gender = gender ?? Gender.Male
+            Gender = gender
         };
     }
 }
