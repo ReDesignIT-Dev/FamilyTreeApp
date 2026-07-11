@@ -28,20 +28,4 @@ public class PersonFactory(IHtmlSanitizerService htmlSanitizer) : IPersonFactory
             CreatedAt = DateTime.UtcNow
         };
     }
-
-    public void ApplyUpdate(Person person, UpdatePersonDto dto)
-    {
-        person.FirstName = dto.FirstName?.Trim() ?? string.Empty;
-        person.MiddleName = dto.MiddleName?.Trim();
-        person.LastName = dto.LastName?.Trim() ?? string.Empty;
-        person.MaidenName = dto.MaidenName?.Trim();
-        person.BirthDate = dto.BirthDate;
-        person.BirthPlace = dto.BirthPlace?.Trim();
-        person.DeathDate = dto.DeathDate;
-        person.DeathPlace = dto.DeathPlace?.Trim();
-        person.Gender = dto.Gender ?? Gender.Male;
-        person.Biography = !string.IsNullOrWhiteSpace(dto.Biography)
-            ? _htmlSanitizer.Sanitize(dto.Biography)
-            : null;
-    }
 }
