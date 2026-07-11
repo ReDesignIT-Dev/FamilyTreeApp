@@ -26,40 +26,54 @@ public partial class FamilyMemberService(
         int userId,
         CreatePersonDto dto)
     {
-        // Validate at least one name is provided
-        var nameValidationError = ValidateAtLeastOneName(dto.FirstName, dto.LastName);
-        if (!string.IsNullOrEmpty(nameValidationError))
-            return (false, null, nameValidationError);
+        var validationError = ValidateCreatePersonDto(dto);
+        if (validationError != null)
+            return (false, null, validationError);
 
-        var tree = await _context.FamilyTrees
-            .FirstOrDefaultAsync(t => t.Id == treeId);
+        var (treeSuccess, _, treeError) = await GetTreeForEditAsync(treeId, userId);
+        if (!treeSuccess)
+            return (false, null, treeError);
 
+        var person = _personFactory.Create(dto);
+        await PersistPersonAndTreeMemberAsync(person, treeId);
+
+        LogPersonAddedToTree(userId, person.Id, treeId);
+        return (true, person, null);
+    }
+
+    private static string? ValidateCreatePersonDto(CreatePersonDto dto)
+    {
+        var nameError = ValidateAtLeastOneName(dto.FirstName, dto.LastName);
+        if (nameError != null)
+            return nameError;
+
+        if (dto.DeathDate.HasValue && dto.BirthDate.HasValue && dto.DeathDate < dto.BirthDate)
+            return ServiceErrors.DeathBeforeBirth;
+
+        return null;
+    }
+
+    private async Task<(bool Success, FamilyTree? Tree, string? Error)> GetTreeForEditAsync(int treeId, int userId)
+    {
+        var tree = await _context.FamilyTrees.FindAsync(treeId);
         if (tree == null)
             return (false, null, ServiceErrors.FamilyTreeNotFound);
 
         if (tree.OwnerId != userId)
             return (false, null, ServiceErrors.NoEditPermission);
 
-        if (dto.DeathDate.HasValue && dto.BirthDate.HasValue && dto.DeathDate < dto.BirthDate)
-            return (false, null, ServiceErrors.DeathBeforeBirth);
+        return (true, tree, null);
+    }
 
-        var person = _personFactory.Create(dto);
-
-        _context.People.Add(person);
-        await _context.SaveChangesAsync();
-
+    private async Task PersistPersonAndTreeMemberAsync(Person person, int treeId)
+    {
         var treeMember = new TreeMember
         {
             FamilyTreeId = treeId,
-            PersonId = person.Id
+            Person = person
         };
-
         _context.TreeMembers.Add(treeMember);
         await _context.SaveChangesAsync();
-
-        LogPersonAddedToTree(userId, person.Id, treeId);
-
-        return (true, person, null);
     }
 
     public async Task<(bool Success, List<PersonSummaryDto>? Members, string? Error)> GetTreeMembersAsync(
@@ -123,14 +137,11 @@ public partial class FamilyMemberService(
         int personId,
         int userId)
     {
-        var tree = await _context.FamilyTrees.FindAsync(treeId);
-        if (tree == null)
-            return (false, ServiceErrors.FamilyTreeNotFound);
+        var (treeSuccess, tree, treeError) = await GetTreeForEditAsync(treeId, userId);
+        if (!treeSuccess)
+            return (false, treeError);
 
-        if (tree.OwnerId != userId)
-            return (false, ServiceErrors.NoEditPermission);
-
-        if (tree.OwnerPersonId == personId)
+        if (tree!.OwnerPersonId == personId)
             return (false, ServiceErrors.CannotRemoveOwner);
 
         var treeMember = await _context.TreeMembers
@@ -184,12 +195,9 @@ public partial class FamilyMemberService(
         int personId,
         int userId)
     {
-        var tree = await _context.FamilyTrees.FindAsync(treeId);
-        if (tree == null)
-            return (false, null, ServiceErrors.FamilyTreeNotFound);
-
-        if (tree.OwnerId != userId)
-            return (false, null, ServiceErrors.NoEditPermission);
+        var (treeSuccess, _, treeError) = await GetTreeForEditAsync(treeId, userId);
+        if (!treeSuccess)
+            return (false, null, treeError);
 
         var treeMember = await _context.TreeMembers
             .FirstOrDefaultAsync(tm => tm.FamilyTreeId == treeId && tm.PersonId == personId);
