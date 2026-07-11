@@ -6,5 +6,4 @@ namespace FamilyTreeApp.Server.Interfaces;
 public interface IPersonFactory
 {
     Person Create(CreatePersonDto dto);
-    void ApplyUpdate(Person person, UpdatePersonDto dto);
 }
