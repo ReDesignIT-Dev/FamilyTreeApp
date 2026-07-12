@@ -5,12 +5,14 @@ namespace FamilyTreeApp.Server.Tests.TestHelpers;
 
 public static class InMemoryFamilyTreeContextFactory
 {
-    public static FamilyTreeContext Create(string? databaseName = null)
+    public static DbContextOptions<FamilyTreeContext> BuildOptions()
     {
-        var options = new DbContextOptionsBuilder<FamilyTreeContext>()
-            .UseInMemoryDatabase(databaseName ?? Guid.NewGuid().ToString())
+        // Generate unique database name per call (per test)
+        return new DbContextOptionsBuilder<FamilyTreeContext>()
+            .UseInMemoryDatabase($"InMemoryTestDb_{Guid.NewGuid().ToString("N")}")
             .Options;
-
-        return new FamilyTreeContext(options);
     }
+
+    public static FamilyTreeContext Create() =>
+        new FamilyTreeContext(BuildOptions());
 }

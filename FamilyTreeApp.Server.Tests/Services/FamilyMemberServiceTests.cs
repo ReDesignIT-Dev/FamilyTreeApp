@@ -58,6 +58,9 @@ public class FamilyMemberServiceTests
     [InlineData(null, null)]
     [InlineData("", "")]
     [InlineData("  ", "  ")]
+    [InlineData(null, "Kowalski")]  
+    [InlineData("Jan", null)]    
+    [InlineData("", "Kowalski")]  
     public async Task AddPersonToTreeAsync_BothNamesEmpty_ReturnsNameValidationError(
         string? firstName, string? lastName)
     {
