@@ -2,10 +2,10 @@ import { fileURLToPath, URL } from 'node:url';
 
 import { defineConfig } from 'vite';
 import plugin from '@vitejs/plugin-react';
-import fs from 'fs';
-import path from 'path';
-import child_process from 'child_process';
-import { env } from 'process';
+import fs from 'node:fs';
+import path from 'node:path';
+import child_process from 'node:child_process';
+import { env } from 'node:process';
 
 const isDev = env.NODE_ENV !== 'production';
 
@@ -40,7 +40,7 @@ if (isDev) {
     }
 
     serverConfig = {
-        port: parseInt(env.DEV_SERVER_PORT || '52177'),
+        port: Number.parseInt(env.DEV_SERVER_PORT || '52177'),
         https: {
             key: fs.readFileSync(keyFilePath),
             cert: fs.readFileSync(certFilePath),

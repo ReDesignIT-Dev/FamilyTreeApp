@@ -1,6 +1,6 @@
 import {
   Alert, Box, Button, CircularProgress, Dialog, DialogActions,
-  DialogContent, DialogTitle, Divider, Typography,
+  DialogContent, DialogTitle, Divider, Typography, alpha,
 } from '@mui/material';
 import type { Gender, PersonDto } from '@/types/familyTree.types';
 import { useAddMemberForm } from '@/hooks/useAddMemberForm';
@@ -8,6 +8,7 @@ import PersonBiographyField from './fields/PersonBiographyField';
 import PersonGenderField from './fields/PersonGenderField';
 import PersonLifeEventFields from './fields/PersonLifeEventFields';
 import PersonNameFields from './fields/PersonNameFields';
+
 interface Props {
   open: boolean;
   treeId: number;
@@ -43,14 +44,25 @@ export default function AddMemberDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{mode === 'edit' ? 'Edit Family Member' : 'Add Family Member'}</DialogTitle>
+      <DialogTitle sx={{ pb: 1.5 }}>
+        <Typography variant="h6" fontWeight={700}>
+          {mode === 'edit' ? 'Edit Family Member' : 'Add Family Member'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {mode === 'edit' ? 'Update member information' : 'Fill in the details for the new member'}
+        </Typography>
+      </DialogTitle>
+      <Divider />
 
-      <DialogContent dividers>
-        <Box display="flex" flexDirection="column" gap={3} pt={1}>
+      <DialogContent sx={{ pt: 2.5 }}>
+        <Box display="flex" flexDirection="column" gap={3}>
           {error && <Alert severity="error">{error}</Alert>}
 
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Name</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <Box sx={{ width: 3, height: 16, borderRadius: 2, bgcolor: '#4CAF7D' }} />
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">NAME</Typography>
+            </Box>
             <PersonNameFields
               firstName={form.firstName ?? ''}
               middleName={form.middleName ?? ''}
@@ -65,7 +77,10 @@ export default function AddMemberDialog({
           <Divider />
 
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Gender</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <Box sx={{ width: 3, height: 16, borderRadius: 2, bgcolor: '#F5A623' }} />
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">GENDER</Typography>
+            </Box>
             <PersonGenderField
               value={form.gender ?? 'Male'}
               onChange={(value: Gender) => setGenderField(value)}
@@ -75,7 +90,10 @@ export default function AddMemberDialog({
           <Divider />
 
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Life Events</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <Box sx={{ width: 3, height: 16, borderRadius: 2, bgcolor: '#4CAF7D' }} />
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">LIFE EVENTS</Typography>
+            </Box>
             <PersonLifeEventFields
               birthDate={form.birthDate ?? ''}
               birthPlace={form.birthPlace ?? ''}
@@ -88,7 +106,10 @@ export default function AddMemberDialog({
           <Divider />
 
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Biography</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <Box sx={{ width: 3, height: 16, borderRadius: 2, bgcolor: '#F5A623' }} />
+              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">BIOGRAPHY</Typography>
+            </Box>
             <PersonBiographyField
               value={form.biography ?? ''}
               onChange={(value) => setTextField('biography', value)}
@@ -97,13 +118,17 @@ export default function AddMemberDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>Cancel</Button>
+      <Divider />
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={handleClose} disabled={loading} sx={{ color: 'text.secondary' }}>
+          Cancel
+        </Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
           disabled={loading}
           startIcon={loading ? <CircularProgress size={16} color="inherit" /> : undefined}
+          sx={{ minWidth: 120 }}
         >
           {mode === 'edit' ? 'Save Changes' : 'Add Member'}
         </Button>

@@ -5,7 +5,7 @@ import Loading from "@/components/common/Loading";
 import { useLoginRedirect } from '@/hooks/useLoginRedirect';
 import { loginUser } from "@/reduxComponents/reduxUser/Auth/authReducer";
 import type { AppDispatch, RootState } from "@/reduxComponents/store";
-import { Alert, Box, Button, Link, Paper, Typography } from "@mui/material";
+import { Alert, Box, Button, Link, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link as RouterLink } from "react-router-dom";
@@ -50,55 +50,62 @@ const LoginFormComponent: React.FC = () => {
         }
     };
 
+    if (isLoading) return <Loading />;
+
+    if (isLoggedIn) {
+        return (
+            <Alert severity="success">Login successful! Redirecting...</Alert>
+        );
+    }
+
     return (
-        <Box display="flex" justifyContent="center" alignItems="center">
-            {isLoading ? (
-                <Loading />
-            ) : isLoggedIn ? (
-                <Alert severity="success">Login successful! Redirecting...</Alert>
-            ) : (
-                <Paper elevation={3} sx={{ p: 4, width: "100%", maxWidth: 400 }}>
-                    <Typography variant="h5" align="center" gutterBottom>
-                        Sign In
-                    </Typography>
-                    <Box
-                        component="form"
-                        onSubmit={handleSubmit}
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                        gap={2}
-                    >
-                        <Box width="100%">
-                            <EmailField
-                                value={email}
-                                onChange={setEmail}
-                                onValidate={setIsEmailValid}
-                                disabled={false}
-                            />
-                        </Box>
-                        <Box width="100%">
-                            <PasswordField
-                                customClasses="w-100"
-                                value={password}
-                                onChange={setPassword}
-                                onValidate={setIsPasswordValid}
-                            />
-                        </Box>
-                        <RecaptchaField
-                            onValidate={setIsValidRecaptchaToken}
-                            setReturnToken={setReCaptchaToken}
-                            customClasses="w-100"
-                        />
-                        <Button type="submit" variant="contained" fullWidth disabled={!isValid}>
-                            Submit
-                        </Button>
-                        <Link component={RouterLink} to={PATH_AUTH_PASSWORD_RECOVERY} variant="body2">
-                            Forgot your password?
-                        </Link>
-                        {error && <Alert severity="warning" sx={{ width: "100%" }}>{error}</Alert>}
-                    </Box>
-                </Paper>
+        <Box
+            component="form"
+            onSubmit={handleSubmit}
+            display="flex"
+            flexDirection="column"
+            gap={2}
+        >
+            <Box>
+                <EmailField
+                    value={email}
+                    onChange={setEmail}
+                    onValidate={setIsEmailValid}
+                    disabled={false}
+                />
+            </Box>
+            <Box>
+                <PasswordField
+                    customClasses="w-100"
+                    value={password}
+                    onChange={setPassword}
+                    onValidate={setIsPasswordValid}
+                />
+            </Box>
+            <RecaptchaField
+                onValidate={setIsValidRecaptchaToken}
+                setReturnToken={setReCaptchaToken}
+                customClasses="w-100"
+            />
+            <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                disabled={!isValid}
+                size="large"
+                sx={{ mt: 1 }}
+            >
+                Sign In
+            </Button>
+            <Box textAlign="center">
+                <Link component={RouterLink} to={PATH_AUTH_PASSWORD_RECOVERY} variant="body2" color="primary">
+                    Forgot your password?
+                </Link>
+            </Box>
+            {error && (
+                <Alert severity="warning" sx={{ mt: 1 }}>
+                    <Typography variant="body2">{error}</Typography>
+                </Alert>
             )}
         </Box>
     );

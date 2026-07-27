@@ -11,6 +11,8 @@ import {
     MenuItem,
     Tooltip,
     Typography,
+    alpha,
+    Button,
 } from '@mui/material';
 import {
     Logout,
@@ -55,33 +57,54 @@ export default function AccountMenu() {
 
     const avatarInitial = username ? username[0].toUpperCase() : undefined;
 
+    if (!isLoggedIn) {
+        return (
+            <Button
+                variant="outlined"
+                size="small"
+                onClick={() => navigate(PATH_AUTH_LOGIN)}
+                sx={{
+                    borderColor: 'rgba(255,255,255,0.15)',
+                    color: 'text.secondary',
+                    '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
+                }}
+            >
+                Sign In
+            </Button>
+        );
+    }
+
     return (
         <>
-            <Tooltip title={isLoggedIn ? username ?? 'Account' : 'Sign in'}>
+            <Tooltip title={username ?? 'Account'} arrow>
                 <IconButton
                     onClick={handleOpen}
-                    color="inherit"
                     aria-label="account menu"
                     aria-controls={open ? 'account-menu' : undefined}
                     aria-haspopup="true"
                     aria-expanded={open ? 'true' : undefined}
-                    size="large"
+                    sx={{
+                        p: 0.5,
+                        border: `2px solid ${open ? '#4CAF7D' : 'rgba(255,255,255,0.12)'}`,
+                        borderRadius: '50%',
+                        transition: 'border-color 0.2s ease',
+                        '&:hover': { borderColor: '#4CAF7D' },
+                    }}
                 >
                     {isLoading ? (
-                        <CircularProgress size={24} color="inherit" />
-                    ) : isLoggedIn && avatarInitial ? (
+                        <CircularProgress size={28} sx={{ color: '#4CAF7D' }} />
+                    ) : (
                         <Avatar
                             sx={{
                                 width: 32,
                                 height: 32,
                                 fontSize: '0.875rem',
-                                bgcolor: 'secondary.main',
+                                fontWeight: 700,
+                                background: 'linear-gradient(135deg, #4CAF7D 0%, #2E7D52 100%)',
                             }}
                         >
-                            {avatarInitial}
+                            {avatarInitial ?? <PersonOutlined sx={{ fontSize: 18 }} />}
                         </Avatar>
-                    ) : (
-                        <PersonOutlined />
                     )}
                 </IconButton>
             </Tooltip>
@@ -96,7 +119,7 @@ export default function AccountMenu() {
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 slotProps={{
                     paper: {
-                        elevation: 4,
+                        elevation: 0,
                         sx: {
                             minWidth: 220,
                             overflow: 'visible',
@@ -109,9 +132,12 @@ export default function AccountMenu() {
                                 right: 14,
                                 width: 10,
                                 height: 10,
-                                bgcolor: 'background.paper',
+                                bgcolor: 'rgba(22,27,34,0.95)',
                                 transform: 'translateY(-50%) rotate(45deg)',
                                 zIndex: 0,
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRight: 'none',
+                                borderBottom: 'none',
                             },
                         },
                     },
@@ -119,12 +145,27 @@ export default function AccountMenu() {
             >
                 {/* User identity header */}
                 <Box sx={{ px: 2, py: 1.5 }}>
-                    <Typography variant="subtitle2" fontWeight={600} noWrap>
-                        {username}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        Signed in
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar
+                            sx={{
+                                width: 36,
+                                height: 36,
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                background: 'linear-gradient(135deg, #4CAF7D 0%, #2E7D52 100%)',
+                            }}
+                        >
+                            {avatarInitial}
+                        </Avatar>
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={600} noWrap>
+                                {username}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                Signed in
+                            </Typography>
+                        </Box>
+                    </Box>
                 </Box>
 
                 <Divider />
@@ -138,9 +179,16 @@ export default function AccountMenu() {
 
                 <Divider />
 
-                <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                <MenuItem
+                    onClick={handleLogout}
+                    sx={{
+                        color: 'error.main',
+                        '&:hover': { bgcolor: alpha('#F85149', 0.1) },
+                        '& .MuiListItemIcon-root': { color: 'error.main' },
+                    }}
+                >
                     <ListItemIcon>
-                        <Logout fontSize="small" color="error" />
+                        <Logout fontSize="small" />
                     </ListItemIcon>
                     Sign Out
                 </MenuItem>

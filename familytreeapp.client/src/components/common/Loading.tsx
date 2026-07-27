@@ -1,31 +1,42 @@
-import React, { useEffect, useState } from "react";
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography } from '@mui/material';
+import { AccountTree } from '@mui/icons-material';
 
-const Loading: React.FC = () => {
-  const [showSpinner, setShowSpinner] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSpinner(true), 200);
-    return () => clearTimeout(timer); // Clear timer if unmounted early
-  }, []);
-
-  if (!showSpinner) return null;
-
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="30vh"
-      gap={2}
-    >
-      <CircularProgress color="primary" size={60} />
-      <Typography variant="h6" color="textSecondary">
-        Please wait
-      </Typography>
-    </Box>
-  );
-};
-
-export default Loading;
+export default function Loading() {
+    return (
+        <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            minHeight={240}
+            gap={2.5}
+        >
+            <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                <CircularProgress
+                    size={56}
+                    thickness={2}
+                    sx={{
+                        color: '#4CAF7D',
+                        '& .MuiCircularProgress-circle': {
+                            strokeLinecap: 'round',
+                        },
+                    }}
+                />
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <AccountTree sx={{ fontSize: 22, color: '#4CAF7D', opacity: 0.8 }} />
+                </Box>
+            </Box>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                Loading...
+            </Typography>
+        </Box>
+    );
+}
